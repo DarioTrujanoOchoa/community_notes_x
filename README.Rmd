@@ -1,0 +1,10 @@
+---
+title: "Community Notes Data"
+output: html_notebook
+---
+
+Data from the project from X, Community Notes, can be found here: https://twitter.com/i/communitynotes/download-data
+
+And the explanation of the data here: https://communitynotes.twitter.com/guide/en/under-the-hood/download-data
+
+And the code is here: https://github.com/twitter/communitynotes
