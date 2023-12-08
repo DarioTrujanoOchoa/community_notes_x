@@ -70,6 +70,16 @@ table(s_notes$classification,s_notes$isMediaNote)
 
 table(s_notes$classification,s_notes$trustworthySources)
 
+notes_final <-
+  notes %>% select(
+    noteId,
+    classification,
+     trustworthySources,
+     summary, 
+     isMediaNote
+     ) %>% 
+  mutate(note_length = nchar(summary))
+
 # status ----
 
 # the observations in the dataset are unique
@@ -85,11 +95,45 @@ table(status$currentStatus, status$lockedStatus)
 
 # ratings ----
 
+length(unique(r0$raterParticipantId))
+
+barplot(table(table(r0$raterParticipantId)),
+        xlab = "Number of Ratings",
+        ylab = "Number of Raters",
+        main = "Distribution of Ratings Published by Rater")
+
 # most of the notes are in the ratings dataset
 sum(r0$noteId %in% notes$noteId)
 sum(notes$noteId %in% r0$noteId)
 
+# Most notes have few ratings
 barplot(table(table(r0$noteId)),
         xlab = "Number of Ratings",
         ylab = "Number of Notes",
         main = "Distribution of Ratings Published by Note")
+
+table(r0$helpfulnessLevel)
+
+rates_summarise <-
+r0 %>% 
+  group_by(noteId) %>% 
+  summarise(
+            ratings = n(),
+            agreement_rate = sum(agree)/n(),
+            helpful = sum(helpfulnessLevel =="HELPFUL",na.rm = T),
+            not_helpful = sum(helpfulnessLevel =="NOT_HELPFUL",na.rm = T)
+            )
+
+rates_summarise
+
+# merge data ----
+
+notes_merged <- left_join(notes_final, rates_summarise, by = join_by(noteId))
+notes_merged
+
+lm(ratings ~ 
+     classification +
+     trustworthySources +
+     note_length,
+   data = notes_merged)
+
