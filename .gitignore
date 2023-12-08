@@ -1,3 +1,5 @@
 .DS_Store
 *.tsv
 .Rproj.user
+*.RData
+*.crdownload
