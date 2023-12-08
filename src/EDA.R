@@ -26,6 +26,8 @@ sum(notes$noteId %in% status$noteId)
 
 s_notes <- slice_sample(notes,n = 10000) 
 s_status <- slice_sample(status,n = 10000) 
+
+# The variables Believable, harmful, and validation difficulty were Deprecated as of 2022-10-27.
 vis_miss(s_notes)
 vis_miss(s_status)
 
