@@ -2,15 +2,17 @@
 
 library(pacman)
 p_load(tidyverse, 
+       lubridate,
        naniar)
 
 # load data ----
+# notes
 notes <- read_tsv("data/notes-00000.tsv")
 spec(notes)
-
+## status
 status <- read_tsv("data/noteStatusHistory-00000.tsv")
 spec(status)
-
+## ratings
 r0 <- read_tsv("data/ratings-00000.tsv")
 r1 <- read_tsv("data/ratings-00001.tsv")
 r2 <- read_tsv("data/ratings-00002.tsv")
@@ -70,6 +72,7 @@ table(s_notes$classification,s_notes$isMediaNote)
 
 table(s_notes$classification,s_notes$trustworthySources)
 
+# select the variables that will be used in the model from the notes dataset
 notes_final <-
   notes %>% select(
     noteId,
@@ -95,16 +98,34 @@ table(status$currentStatus, status$lockedStatus)
 
 # ratings ----
 
+# there are 109,142 raters. Small for the number of notes.
+# they cover 
 length(unique(r0$raterParticipantId))
+
+# only 13 people in r3 were in r1
+# 42 people in r1 were in r3
+# There is no more repetitions
+sum(r1$raterParticipantId %in% 
+       r3$raterParticipantId)
 
 barplot(table(table(r0$raterParticipantId)),
         xlab = "Number of Ratings",
         ylab = "Number of Raters",
         main = "Distribution of Ratings Published by Rater")
 
+## ratings in notes ----
 # most of the notes are in the ratings dataset
 sum(r0$noteId %in% notes$noteId)
-sum(notes$noteId %in% r0$noteId)
+sum(r1$noteId %in% notes$noteId)
+sum(r2$noteId %in% notes$noteId)
+sum(r3$noteId %in% notes$noteId)
+
+mean(notes$noteId %in% r0$noteId)
+mean(notes$noteId %in% r1$noteId)
+mean(notes$noteId %in% r2$noteId)
+mean(notes$noteId %in% r3$noteId)
+
+mean(r3$noteId %in% r1$noteId)
 
 # Most notes have few ratings
 barplot(table(table(r0$noteId)),
@@ -115,7 +136,10 @@ barplot(table(table(r0$noteId)),
 table(r0$helpfulnessLevel)
 
 rates_summarise <-
-r0 %>% 
+bind_rows(r0, 
+          r1, 
+          r2, 
+          r3) %>% 
   group_by(noteId) %>% 
   summarise(
             ratings = n(),
@@ -130,6 +154,8 @@ rates_summarise
 
 notes_merged <- left_join(notes_final, rates_summarise, by = join_by(noteId))
 notes_merged
+
+save(notes_merged,file = "data/notes_merged.RData")
 
 lm(ratings ~ 
      classification +
