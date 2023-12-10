@@ -139,7 +139,7 @@ table(r0$helpfulnessLevel)
 
 rates_summarise <-
 bind_rows(r0, 
-          r1, 
+          # r1, 
           r2, 
           r3) %>% 
   group_by(noteId) %>% 
@@ -158,10 +158,4 @@ notes_merged <- left_join(notes_final, rates_summarise, by = join_by(noteId))
 notes_merged
 
 save(notes_merged,file = "data/notes_merged.RData")
-
-lm(ratings ~ 
-     classification +
-     trustworthySources +
-     note_length,
-   data = notes_merged)
 
