@@ -83,3 +83,10 @@ notes_metrics(notes_lm_aug, truth = ratings,
 
 notes_merged %>% ggplot() +
   geom_point(aes(x=agreement_rate,y=ratings))
+
+# knn model
+notes_knn_aug <- augment(fit_knn, test_notes)
+notes_metrics(notes_knn_aug, truth = ratings,
+              estimate = .pred)
+
+
