@@ -139,7 +139,7 @@ table(r0$helpfulnessLevel)
 
 rates_summarise <-
 bind_rows(r0, 
-          # r1, 
+          r1,
           r2, 
           r3) %>% 
   group_by(noteId) %>% 
