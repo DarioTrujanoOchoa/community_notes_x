@@ -1,0 +1,44 @@
+---
+title: "My UCSB Machine Learning Project on Community Notes"
+author: "Dario Trujano-Ochoa"
+date: "Fall 2023"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+Embarking on my Machine Learning (ML) project I am delving into the world of Community Notes on X, formerly known as Twitter. 
+I will use ML tools to find the best model to predict the number of ratings that each notes has received.
+
+![Fig 1. Community Notes Logo^[By Community Notes - https://twitter.com/CommunityNotes/photo, Public Domain, https://commons.wikimedia.org/w/index.php?curid=141534850]](images/Community_Notes_logo.png){ width=30%, style="display: block; margin: 0 auto;" }
+
+## What are Community Notes?
+
+Community Notes stands out as an innovative platform where contributors collaboratively add context to potentially misleading posts, challenging conventional content moderation methods. The publication of a Community Note is driven not by a majority rule but by the agreement of contributors who have previously disagreed, creating a transparent, community-driven approach to combat misinformation.
+This sounds like a great idea, but it has been proven sometimes good but insufficient^[https://www.lemonde.fr/en/pixels/article/2023/07/03/i-spent-one-week-as-an-arbiter-of-truth-on-twitter-s-community-notes-service_6042188_13.html] or irrelevant^[https://mashable.com/article/twitter-x-community-notes-misinformation-views-investigation], and even susceptible to disinformation^[https://www.wired.com/story/x-community-notes-failures/], as you can see in more detail in the Wikipedia page dedicated to [Community Notes](https://en.wikipedia.org/wiki/Community_Notes#Criticisms_and_analysis) (CN).
+
+## How are Notes posted?
+
+At the core of this exploration is the open-source algorithm powering Community Notes, described as ["insanely complicated."](https://uk.finance.yahoo.com/news/bird-watching-going-x-twitter-111442959.html?guccounter=1&guce_referrer=aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnLw&guce_referrer_sig=AQAAAJdoz-CTbAiZoR9yDHum0zUXTqVwhTXSB93ig32XLjzMO5rwCrk9QPJbcaqLCfwL2PcxqZgwd9zWLatoZAJkejGVwDHysvbYkRqcylDIefkFpoRgHDr1O4pvWFXlDV1Dfox1QJGZbGqJsszkp4VCvs_OOEGJVG6QqtL1QyDNA2tZ) This algorithm ensures that notes are rated by a diverse range of perspectives, incorporating an opinion classification based on contributors' alignment with the left and right-wing political spectrum. 
+It is only after people that previusly disagree, agree on the helpfulness of a note that the note is posted.
+Therefore, the number of ratings that a note receives is very important to determine if the note is ever published, and how fast.
+
+![Fig 2. Community Notes Rating)^[By Twitter - Original publication: Screenshot from CommunityNotesContributorImmediate source: https://twitter.com/i/communitynotes, Fair use, https://en.wikipedia.org/w/index.php?curid=75348629]](images/CommunityNotesRating.png){width=50%, style="display: block; margin: 0 auto;"}
+
+## What this project explore?
+
+The project is centered around a vast dataset comprising over 300,000 notes, each representing a collaborative effort to combat misinformation. Of particular significance is the attempt to predict the number of ratings received by each note, as this is a crucial determinant in deciding whether a note is published. This predictive aspect adds a layer of complexity to our analysis, aiming to uncover insights into the collaborative evaluation system and its impact on the publication of notes.
+
+The openness of the data invite scrutiny and analysis, fostering an environment where skepticism can be transformed into informed inquiry. Join me on this journey as we explore the intricacies of Community Notes, where data, algorithms, and predictive analytics intersect with the complex tapestry of human interaction in the digital age.
+
+
+
+
