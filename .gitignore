@@ -3,4 +3,4 @@
 .Rproj.user
 *.RData
 *.crdownload
-*.Rhistory
+.Rhistory
