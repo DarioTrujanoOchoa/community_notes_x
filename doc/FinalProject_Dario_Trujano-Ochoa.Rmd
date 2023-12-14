@@ -25,13 +25,15 @@ I will use ML tools to find the best model to predict the number of ratings that
 Community Notes stands out as an innovative platform where contributors collaboratively add context to potentially misleading posts, challenging conventional content moderation methods. The publication of a Community Note is driven not by a majority rule but by the agreement of contributors who have previously disagreed, creating a transparent, community-driven approach to combat misinformation.
 This sounds like a great idea, but it has been proven sometimes good but insufficient^[https://www.lemonde.fr/en/pixels/article/2023/07/03/i-spent-one-week-as-an-arbiter-of-truth-on-twitter-s-community-notes-service_6042188_13.html] or irrelevant^[https://mashable.com/article/twitter-x-community-notes-misinformation-views-investigation], and even susceptible to disinformation^[https://www.wired.com/story/x-community-notes-failures/], as you can see in more detail in the Wikipedia page dedicated to [Community Notes](https://en.wikipedia.org/wiki/Community_Notes#Criticisms_and_analysis) (CN).
 
+![Fig 2. Community Notes Logo^[By Community Notes - https://github.com/twitter/communitynotes]](images/help-rate-this-note-expanded.png){ width=30%, style="display: block; margin: 0 auto;" }
+
 ## How are Notes posted?
 
 At the core of this exploration is the open-source algorithm powering Community Notes, described as ["insanely complicated."](https://uk.finance.yahoo.com/news/bird-watching-going-x-twitter-111442959.html?guccounter=1&guce_referrer=aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnLw&guce_referrer_sig=AQAAAJdoz-CTbAiZoR9yDHum0zUXTqVwhTXSB93ig32XLjzMO5rwCrk9QPJbcaqLCfwL2PcxqZgwd9zWLatoZAJkejGVwDHysvbYkRqcylDIefkFpoRgHDr1O4pvWFXlDV1Dfox1QJGZbGqJsszkp4VCvs_OOEGJVG6QqtL1QyDNA2tZ) This algorithm ensures that notes are rated by a diverse range of perspectives, incorporating an opinion classification based on contributors' alignment with the left and right-wing political spectrum. 
 It is only after people that previusly disagree, agree on the helpfulness of a note that the note is posted.
 Therefore, the number of ratings that a note receives is very important to determine if the note is ever published, and how fast.
 
-![Fig 2. Community Notes Rating)^[By Twitter - Original publication: Screenshot from CommunityNotesContributorImmediate source: https://twitter.com/i/communitynotes, Fair use, https://en.wikipedia.org/w/index.php?curid=75348629]](images/CommunityNotesRating.png){width=50%, style="display: block; margin: 0 auto;"}
+![Fig 3. Community Notes Rating)^[By Twitter - Original publication: Screenshot from CommunityNotesContributorImmediate source: https://twitter.com/i/communitynotes, Fair use, https://en.wikipedia.org/w/index.php?curid=75348629]](images/CommunityNotesRating.png){width=50%, style="display: block; margin: 0 auto;"}
 
 ## What this project explore?
 
@@ -40,6 +42,22 @@ The project is centered around a vast dataset comprising over 300,000 notes, eac
 The openness of the data invite scrutiny and analysis, fostering an environment where skepticism can be transformed into informed inquiry. Join me on this journey as we explore the intricacies of Community Notes, where data, algorithms, and predictive analytics intersect with the complex tapestry of human interaction in the digital age.
 
 # Data Set
+
+The data from the notes and the ratings are open to anyone with an account on X. On the github page of CN you can also find the code and algorithm. 
+Here are the sources:
+
+- Data from the project from X, Community Notes, can be found [here](https://twitter.com/i/communitynotes/download-data).
+
+  - The explanation of the data can be found [here](https://communitynotes.twitter.com/guide/en/under-the-hood/download-data).
+
+- And the code from Community Notes is in [github](https://github.com/twitter/communitynotes).
+
+Since the data sets are very large, I save the final data set with the information I needed from each one. 
+In this section I explain the original data sets and the creation of the final merged data used for the present project. 
+
+
+
+
 
 ## Original Open Source Data
 
@@ -131,27 +149,27 @@ knn_wkflow <- workflow() %>%
 ```{r}
 # fitting models ----
 ## linear ----
-fit_lm <- 
-  lm_wkflow %>% 
-  fit(data = training_notes)
-fit_lm
-
-## KNN ----
-fit_knn <- 
-  knn_wkflow %>% 
-  fit(data = training_notes)
-fit_knn
-
-# metrics
-notes_metrics <- metric_set(rmse, rsq, mae)
-
-# linear model
-notes_lm_aug <- augment(fit_lm, test_notes)
-notes_metrics(notes_lm_aug, truth = ratings,
-                estimate = .pred)
-
-notes_merged %>% ggplot() +
-  geom_point(aes(x=agreement_rate,y=ratings))
+# fit_lm <- 
+#   lm_wkflow %>% 
+#   fit(data = training_notes)
+# fit_lm
+# 
+# ## KNN ----
+# fit_knn <- 
+#   knn_wkflow %>% 
+#   fit(data = training_notes)
+# fit_knn
+# 
+# # metrics
+# notes_metrics <- metric_set(rmse, rsq, mae)
+# 
+# # linear model
+# notes_lm_aug <- augment(fit_lm, test_notes)
+# notes_metrics(notes_lm_aug, truth = ratings,
+#                 estimate = .pred)
+# 
+# notes_merged %>% ggplot() +
+#   geom_point(aes(x=agreement_rate,y=ratings))
 
 # knn model
 # notes_knn_aug <- augment(fit_knn, test_notes)

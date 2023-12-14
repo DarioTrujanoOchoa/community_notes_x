@@ -1,5 +1,8 @@
+# prepare_data.R
+# Merge the raw data to feed the models
+# Dario Trujano-Ochoa
 
-
+# packages
 library(pacman)
 p_load(tidyverse, 
        lubridate,
@@ -146,8 +149,9 @@ bind_rows(r0,
   summarise(
             ratings = n(),
             agreement_rate = sum(agree)/n(),
-            helpful = sum(helpfulnessLevel =="HELPFUL",na.rm = T),
-            not_helpful = sum(helpfulnessLevel =="NOT_HELPFUL",na.rm = T)
+            helpful_rate = sum(helpfulnessLevel =="HELPFUL",na.rm = T)/n(),
+            not_helpful_rate = sum(helpfulnessLevel =="NOT_HELPFUL",na.rm = T)/n(),
+            somewhat_helpful_rate = sum(helpfulnessLevel =="SOMEWHAT_HELPFUL",na.rm = T)/n()
             )
 
 rates_summarise

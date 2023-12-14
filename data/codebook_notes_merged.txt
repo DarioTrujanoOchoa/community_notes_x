@@ -1,0 +1,14 @@
+# Code book for the notes_merged.RData 
+
+This data contains the final variables used for the model. This data is merged at the note level from the original data from Community Notes.
+
+noteId: The unique ID of this note.
+classification: User-entered multiple choice response to note writing question: “Given current evidence, I believe this tweet is: "NOT*MISLEADING" or "MISINFORMEDORPOTENTIALLY_MISLEADING"
+trustworthySources: Binary indicator, based on user-entered multiple choice in response to note writing question “Did you link to sources you believe most people would consider trustworthy?”. 1 if “Yes” is selected, 0 if “No” is selected
+summary: User-entered text, in response to the note writing prompt “Please explain the evidence behind your choices, to help others who see this tweet understand why it is not misleading”
+isMediaNote: User-entered checkbox in response to the question “Is your note about the Tweet or the image?”. New as of 2023-05-24.
+note_length: The number of characters in the summary column.ratings: The number of ratings received by the note.
+agreement_rate: Proportion of the ratings where the users agreed on the note. (Agree: binary indicator, based on user-entered multiple choice in response to note rating question “Do you agree with its conclusion?”)
+helpful: Proportion of the ratings where the users answered "HELPFUL" (helpfulnessLevel: User-entered multiple choice response to note rating question: “Is this note helpful” Added as of 2021-06-30.)
+not_helpful: Proportion of the ratings where the users answered "NOT_HELPFUL" (helpfulnessLevel: User-entered multiple choice response to note rating question: “Is this note helpful” Added as of 2021-06-30.)
+somewhat_helpful_rate: Proportion of the ratings where the users answered "SOMEWHAT_HELPFUL" (helpfulnessLevel: User-entered multiple choice response to note rating question: “Is this note helpful” Added as of 2021-06-30.)
