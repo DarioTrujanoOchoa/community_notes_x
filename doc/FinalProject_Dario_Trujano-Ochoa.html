@@ -1634,11 +1634,12 @@ determinant in deciding whether a note is published. This predictive
 aspect adds a layer of complexity to our analysis, aiming to uncover
 insights into the collaborative evaluation system and its impact on the
 publication of notes.</p>
+<p>This notes can be related to any topic and even advertising. It is
+worth noting that the most rated notes was about a <a href="https://twitter.com/Evony_TKR/status/1672908357081124864">game</a>.</p>
 <p>The openness of the data invite scrutiny and analysis, fostering an
 environment where skepticism can be transformed into informed inquiry.
 Join me on this journey as we explore the intricacies of Community
-Notes, where data, algorithms, and predictive analytics intersect with
-the complex tapestry of human interaction in the digital age.</p>
+Notes.</p>
 </div>
 </div>
 <div id="data-set" class="section level1">
@@ -1717,7 +1718,7 @@ test_notes &lt;- testing(split_notes)</code></pre>
 <h1>Model Building</h1>
 <pre class="r"><code># recipe ----
 rec_reg &lt;- recipe(ratings ~  ., 
-              data = training_notes %&gt;% select(-c(noteId,summary))) %&gt;% 
+              data = training_notes %&gt;% select(-c(note_id, tweet_id ,summary))) %&gt;% 
   step_normalize(agreement_rate) 
 
 

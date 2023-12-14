@@ -39,7 +39,10 @@ Therefore, the number of ratings that a note receives is very important to deter
 
 The project is centered around a vast dataset comprising over 300,000 notes, each representing a collaborative effort to combat misinformation. Of particular significance is the attempt to predict the number of ratings received by each note, as this is a crucial determinant in deciding whether a note is published. This predictive aspect adds a layer of complexity to our analysis, aiming to uncover insights into the collaborative evaluation system and its impact on the publication of notes.
 
-The openness of the data invite scrutiny and analysis, fostering an environment where skepticism can be transformed into informed inquiry. Join me on this journey as we explore the intricacies of Community Notes, where data, algorithms, and predictive analytics intersect with the complex tapestry of human interaction in the digital age.
+This notes can be related to any topic and even advertising. 
+It is worth noting that the most rated notes was about a [game](https://twitter.com/Evony_TKR/status/1672908357081124864).
+
+The openness of the data invite scrutiny and analysis, fostering an environment where skepticism can be transformed into informed inquiry. Join me on this journey as we explore the intricacies of Community Notes.
 
 # Data Set
 
@@ -117,7 +120,7 @@ test_notes <- testing(split_notes)
 ```{r}
 # recipe ----
 rec_reg <- recipe(ratings ~  ., 
-              data = training_notes %>% select(-c(noteId,summary))) %>% 
+              data = training_notes %>% select(-c(note_id, tweet_id ,summary))) %>% 
   step_normalize(agreement_rate) 
 
 

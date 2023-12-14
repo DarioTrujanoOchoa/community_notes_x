@@ -27,7 +27,7 @@ test_notes <- testing(split_notes)
 
 # recipe ----
 rec_reg <- recipe(ratings ~  ., 
-              data = training_notes %>% select(-c(noteId,summary))) %>% 
+              data = training_notes %>% select(-c(note_id, tweet_id ,summary))) %>% 
   step_normalize(agreement_rate) 
 
 

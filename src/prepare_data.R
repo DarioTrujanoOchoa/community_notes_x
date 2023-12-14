@@ -81,6 +81,7 @@ table(s_notes$classification,s_notes$trustworthySources)
 notes_final <-
   notes %>% select(
     noteId,
+    tweetId,
     classification,
      trustworthySources,
      summary, 
