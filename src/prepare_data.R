@@ -6,7 +6,8 @@
 library(pacman)
 p_load(tidyverse, 
        lubridate,
-       naniar)
+       naniar,
+       janitor)
 
 # load data ----
 # notes
@@ -156,7 +157,8 @@ rates_summarise
 
 # merge data ----
 
-notes_merged <- left_join(notes_final, rates_summarise, by = join_by(noteId))
+notes_merged <- left_join(notes_final, rates_summarise, by = join_by(noteId)) %>% 
+  clean_names() # let's clean the data names
 notes_merged
 
 save(notes_merged,file = "data/notes_merged.RData")
