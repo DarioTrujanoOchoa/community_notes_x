@@ -11,17 +11,15 @@ p_load(tidyverse,
 # load data ----
 # notes
 notes <- read_tsv("data/notes-00000.tsv")
-spec(notes)
+
 ## status
 status <- read_tsv("data/noteStatusHistory-00000.tsv")
-spec(status)
+
 ## ratings
 r0 <- read_tsv("data/ratings-00000.tsv")
 r1 <- read_tsv("data/ratings-00001.tsv")
 r2 <- read_tsv("data/ratings-00002.tsv")
 r3 <- read_tsv("data/ratings-00003.tsv")
-
-spec(r0)
 
 # Almost all the notes in notes are in status
 # only 20 notes are not there
