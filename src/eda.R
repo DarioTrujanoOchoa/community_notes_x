@@ -2,30 +2,70 @@
 
 # Dario Trujano-Ochoa
 
-# packages 
+# packages and data ----
 library(pacman)
 p_load(tidyverse,
-       ggplo2)
+       ggplot2,
+       corrplot)
 
 load("data/notes_merged.RData")
 
-# missing data
+# missing data ----
 vis_miss(slice_sample(notes_merged,prop = 0.1))
-# there is no missing data in the data set
+# there are 3 rows with missing values
+missing_cell <- which(is.na(notes_merged), arr.ind = TRUE)
+notes_merged[missing_cell[,1],]
+# These are the tweet ids
+notes_merged[missing_cell[,1],] %>% select(tweet_id) %>% pull() %>% format(scientific = F)
+# There is no summary in this notes, probably this was a mistake
+# There is nothing in the note 1370110240532930560 that had 8 ratings. The other two notes were never rated.
 
-# Analyzing the outcome variable
+# I remove the missing values, given the content and the number of missing values this shouldn't be an issue
+notes_merged <- notes_merged %>% drop_na()
+
+# Analyzing the outcome variable ----
 summary(notes_merged$ratings)
+# 99% of the notes have less than 453 ratings
+q_99 <- quantile(notes_merged$ratings,probs = 0.99)
 
 notes_merged %>% 
-  filter(ratings > 500) %>% 
+  filter(ratings < q_99) %>% 
   ggplot() +
-  geom_histogram(aes(x= ratings))
+  geom_histogram(aes(x= ratings)) + 
+  labs(
+    title = "Histogram of the number of Ratings on each Note",
+    subtitle = "Percentile 99 of the Ratings",
+    x="Number of Ratings"
+  ) +
+  theme_bw()
 
-summary(notes_merged$ratings)
-mean(notes_merged$ratings>500)
+notes_merged %>% 
+  filter(ratings >= q_99) %>% 
+  ggplot() +
+  geom_histogram(aes(x= ratings)) + 
+  labs(
+    title = "Histogram of the number of Ratings on each Note",
+    subtitle = "1% of Notes with more Ratings",
+    x="Number of Ratings"
+  ) +
+  theme_bw()
 
 # The note with most ratings
 notes_merged %>% filter(ratings>8000) %>% arrange(ratings) %>% 
   select(tweet_id) %>% 
   pull() %>% 
   format(scientific = F)
+
+# Correlations ----
+# Correlation matrix
+notes_cor <- cor(notes_merged %>% 
+                   select(-ends_with("id")) %>% 
+                   select_if(is.numeric))
+
+# Visualization of correlation matrix
+notes_corrplot <- corrplot.mixed(notes_cor, 
+                                 lower = 'shade', upper = 'pie', order = 'hclust', 
+                                 addCoef.col = 1, number.cex = 0.7,
+                                 tl.pos = "lt"
+                                 )
+# There is little correlation between the variables 
