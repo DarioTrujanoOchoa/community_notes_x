@@ -10,6 +10,7 @@ p_load(tidyverse,
        janitor)
 
 # load data ----
+# all the data was downloaded on December 3rd 2023
 # notes
 notes <- read_tsv("data/notes-00000.tsv")
 
