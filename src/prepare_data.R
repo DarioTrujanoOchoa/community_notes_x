@@ -87,6 +87,9 @@ notes_final <-
      ) %>% 
   mutate(note_length = nchar(summary))
 
+# There is no missing values
+vis_miss(slice_sample(notes_final,prop = 0.1))
+
 # status ----
 
 # the observations in the dataset are unique
@@ -154,12 +157,24 @@ bind_rows(r0,
             )
 
 rates_summarise
+# There is no missing values
+vis_miss(slice_sample(rates_summarise,prop = 0.1))
 
 # merge data ----
+# Notes in both data sets are not exactly the same
+# 9.3% of the notes never received ratings 
+1 - mean(notes_final$noteId %in% rates_summarise$noteId)
 
 notes_merged <- left_join(notes_final, rates_summarise, by = join_by(noteId)) %>% 
-  clean_names() # let's clean the data names
+  clean_names() %>% # let's clean the data names
+  # some notes never received ratings, lte's replace them with 0
+  replace_na(list(ratings = 0,
+                  agreement_rate = 0,
+                  helpful_rate = 0,
+                  not_helpful_rate = 0,
+                  somewhat_helpful_rate = 0))
 notes_merged
+
 
 save(notes_merged,file = "data/notes_merged.RData")
 

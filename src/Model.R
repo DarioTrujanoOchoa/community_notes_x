@@ -17,8 +17,6 @@ p_load(tidyverse,
 
 load("data/notes_merged.RData")
 
-vis_miss(slice_sample(notes_merged,prop = 0.1))
-
 set.seed(1984)
 
 training_percentage <- 0.75
