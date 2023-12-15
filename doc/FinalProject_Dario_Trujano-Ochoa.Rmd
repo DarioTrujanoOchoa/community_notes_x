@@ -15,21 +15,24 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Introduction
 
-Embarking on my Machine Learning (ML) project I am delving into the world of Community Notes on X, formerly known as Twitter. 
+Embarking on my Machine Learning (ML) project I am delving into the world of Community Notes (CN) on X, formerly known as Twitter. 
 I will use ML tools to find the best model to predict the number of ratings that each notes has received.
+
+Community Notes, found on platforms like X (formerly Twitter), play a crucial role in combating misinformation and improving content moderation. They allow users to add context to posts, providing diverse viewpoints to counter potential biases. The algorithm guiding Community Notes emphasizes consensus, ensuring that it's not just about majority agreement. This collaborative approach empowers users to contribute to a more informed online space and brings transparency to the fact-checking process. The significance of Community Notes lies in their ability to debunk misinformation, lessen the impact of misleading content, and encourage a collective effort toward promoting accuracy in digital conversations.
 
 ![Fig 1. Community Notes Logo^[By Community Notes - https://twitter.com/CommunityNotes/photo, Public Domain, https://commons.wikimedia.org/w/index.php?curid=141534850]](images/Community_Notes_logo.png){ width=30%, style="display: block; margin: 0 auto;" }
 
 ## What are Community Notes?
 
-Community Notes stands out as an innovative platform where contributors collaboratively add context to potentially misleading posts, challenging conventional content moderation methods. The publication of a Community Note is driven not by a majority rule but by the agreement of contributors who have previously disagreed, creating a transparent, community-driven approach to combat misinformation.
+Community Notes stands out as an innovative platform where contributors collaboratively add context to potentially misleading posts, challenging conventional content moderation methods. The publication of a CN is driven not by a majority rule but by the agreement of contributors who have previously disagreed, creating a transparent, community-driven approach to combat misinformation.
+
 This sounds like a great idea, but it has been proven sometimes good but insufficient^[https://www.lemonde.fr/en/pixels/article/2023/07/03/i-spent-one-week-as-an-arbiter-of-truth-on-twitter-s-community-notes-service_6042188_13.html] or irrelevant^[https://mashable.com/article/twitter-x-community-notes-misinformation-views-investigation], and even susceptible to disinformation^[https://www.wired.com/story/x-community-notes-failures/], as you can see in more detail in the Wikipedia page dedicated to [Community Notes](https://en.wikipedia.org/wiki/Community_Notes#Criticisms_and_analysis) (CN).
 
 ![Fig 2. Community Notes Logo^[By Community Notes - https://github.com/twitter/communitynotes]](images/help-rate-this-note-expanded.png){ width=30%, style="display: block; margin: 0 auto;" }
 
 ## How are Notes posted?
 
-At the core of this exploration is the open-source algorithm powering Community Notes, described as ["insanely complicated."](https://uk.finance.yahoo.com/news/bird-watching-going-x-twitter-111442959.html?guccounter=1&guce_referrer=aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnLw&guce_referrer_sig=AQAAAJdoz-CTbAiZoR9yDHum0zUXTqVwhTXSB93ig32XLjzMO5rwCrk9QPJbcaqLCfwL2PcxqZgwd9zWLatoZAJkejGVwDHysvbYkRqcylDIefkFpoRgHDr1O4pvWFXlDV1Dfox1QJGZbGqJsszkp4VCvs_OOEGJVG6QqtL1QyDNA2tZ) This algorithm ensures that notes are rated by a diverse range of perspectives, incorporating an opinion classification based on contributors' alignment with the left and right-wing political spectrum. 
+At the core of this exploration is the open-source algorithm powering CN, described as ["insanely complicated."](https://uk.finance.yahoo.com/news/bird-watching-going-x-twitter-111442959.html?guccounter=1&guce_referrer=aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnLw&guce_referrer_sig=AQAAAJdoz-CTbAiZoR9yDHum0zUXTqVwhTXSB93ig32XLjzMO5rwCrk9QPJbcaqLCfwL2PcxqZgwd9zWLatoZAJkejGVwDHysvbYkRqcylDIefkFpoRgHDr1O4pvWFXlDV1Dfox1QJGZbGqJsszkp4VCvs_OOEGJVG6QqtL1QyDNA2tZ) This algorithm ensures that notes are rated by a diverse range of perspectives, incorporating an opinion classification based on contributors' alignment with the left and right-wing political spectrum. 
 It is only after people that previously disagree, agree on the helpfulness of a note that the note is posted.
 Therefore, the number of ratings that a note receives is very important to determine if the note is ever published, and how fast.
 
@@ -37,12 +40,13 @@ Therefore, the number of ratings that a note receives is very important to deter
 
 ## What this project explore?
 
-The project is centered around a vast dataset comprising over 300,000 notes, each representing a collaborative effort to combat misinformation. Of particular significance is the attempt to predict the number of ratings received by each note, as this is a crucial determinant in deciding whether a note is published. This predictive aspect adds a layer of complexity to our analysis, aiming to uncover insights into the collaborative evaluation system and its impact on the publication of notes.
+The project is centered around a vast data set comprising around 380,000 notes, each representing a collaborative effort to combat misinformation. Of particular significance is the attempt to predict the number of ratings received by each note, as this is a crucial determinant in deciding whether a note is published. This predictive aspect adds a layer of complexity to our analysis, aiming to uncover insights into the collaborative evaluation system and its impact on the publication of notes.
 
 This notes can be related to any topic and even advertising. 
 It is worth noting that the most rated notes was about a [game](https://twitter.com/Evony_TKR/status/1672908357081124864).
 
-The openness of the data invite scrutiny and analysis, fostering an environment where skepticism can be transformed into informed inquiry. Join me on this journey as we explore the intricacies of Community Notes.
+The openness of the data invite scrutiny and analysis, fostering an environment where skepticism can be transformed into informed inquiry. 
+Join me on this journey as we explore the intricacies of Community Notes.
 
 # Data Set
 
@@ -58,7 +62,7 @@ Here are the sources:
 Since the data sets are very large, I save the final data set with the information I needed from each one. 
 In this section I explain the original data sets and the creation of the final merged data used for the present project. 
 
-## Original Files and Data Preparation
+## Original Open Source Data
 
 In this section, I present the code I used to create and mere the raw data to create the final dataset.
 If you want to replicate the code, just crate a folder named `data` on your working directory and download all the data directly from X. 
@@ -173,7 +177,7 @@ bind_rows(r0,
 
 ```
 
-### Merging the Data
+### Data Preparation: Merging the Data
 
 The previous data sets will be merged in a file named `notes_merged.RData`. 
 This data set contains all the variables used in the analysis, and their description can be found in the codebook. 
@@ -199,10 +203,7 @@ notes_merged <-
 save(notes_merged,file = "data/notes_merged.RData")
 ```
 
-
-## Original Open Source Data
-
-## Data Preparation
+# EDA
 
 ```{r Load Packages}
 # Load Packages
@@ -217,18 +218,9 @@ p_load(tidyverse,
        ggthemes,
        rsample,
        parsnip,
-       workflows
+       workflows,
+       corrplot
        )
-```
-
-# EDA
-
-```{r}
-# packages and data ----
-library(pacman)
-p_load(tidyverse,
-       ggplot2,
-       corrplot)
 
 load("../data/notes_merged.RData")
 ```
@@ -333,30 +325,49 @@ Also, it is notes classified as not "helpful" receive more ratings.
 This is true for looking at the mean, meadian and 10th and 90th quantile.
 
 ```{r}
-notes_merged %>% group_by(current_status) %>% 
+rmarkdown::paged_table(
+  notes_merged %>% group_by(current_status) %>% 
   summarise(mean(ratings), median(ratings), 
             quantile(ratings,probs = 0.1), 
             quantile(ratings,probs = 0.9)
             )
+)
 ```
 
 In terms of what the note says about the tweet, more notes say that the tweet is "MISINFORMED_OR_POTENTIALLY_MISLEADING".
 This is specially marked for the notes rated as "HELPFUL" were virtually all the notes say the tweet was misinformed or potentially misleading.
 
 ```{r}
-table(notes_merged$classification, notes_merged$current_status)
+rmarkdown::paged_table(
+  as.data.frame(
+    table(notes_merged$classification, notes_merged$current_status)) %>%
+    pivot_wider(names_from = Var1,values_from = Freq) %>% 
+    rename("Current State" = Var2)
+)
 ```
 
 Finally, the number of ratings is very similar between the classification of notes. 
 
 ```{r}
-notes_merged %>% group_by(classification) %>% 
+rmarkdown::paged_table(
+  notes_merged %>% group_by(classification) %>% 
   summarise(mean(ratings), median(ratings), 
             quantile(ratings,probs = 0.1), 
             quantile(ratings,probs = 0.9)
             )
+)
 ```
-# Models
+# Final Data and Models
+
+```{r}
+rmarkdown::paged_table(
+  notes_merged
+)
+```
+
+
+Now that I have the final data set `notes_merged`, I can start the analysis.
+We have to import some packages including `tidymodels`, `yardstick` and `tune`.
 
 ```{r}
 # Load Packages
@@ -373,7 +384,14 @@ p_load(tidyverse,
        parsnip,
        workflows
        )
+```
 
+## Data Splitting and Cross Validation
+
+Now, let's split the original data set to make the analysis.
+I decided to use $75\%$ of the data for training, and the sampling is stratified at the outcome variable `ratings`.  
+
+```{r}
 # To reproduce the results
 set.seed(1984)
 
@@ -381,11 +399,23 @@ set.seed(1984)
 training_percentage <- 0.75
 
 # Splitting the data
-split_notes <- initial_split(notes_merged,prop = training_percentage)
-training_notes <- training(split_notes)
+split_notes <- initial_split(notes_merged,
+                             prop = training_percentage,
+                             strata = ratings)
+train_notes <- training(split_notes)
 test_notes <- testing(split_notes)
 ```
 
+The proportion of observations in the training set was `r nrow(train_notes)/nrow(notes_merged)`, and `r nrow(test_notes)/nrow(notes_merged)` for the test set.
+These numbers are closed to the proportion stated.
+
+In the context of Community Notes within machine learning, envisioning the data set as a collection of notes, the process of dividing this data into training, testing, and validation sets becomes analogous to strategizing how to understand and predict the behavior of future notes. The existing notes serve as a sample, providing insights into how contributors have added context to posts in the past. However, it's imperative not to assume that the future usage of notes will precisely mirror historical patterns.
+
+Much like a training set, a substantial portion of existing notes would be allocated to allow the model to learn patterns, relationships, and features inherent in the data. This phase involves understanding how contributors have historically interacted with posts, detecting common themes, and learning the dynamics of note creation. The testing set, representative of notes yet unseen by the model, acts as a simulated evaluation of the model's ability to generalize its learning to new instances of notes. This evaluation is critical in anticipating how well the model would adapt to future notes scenarios.
+
+To account for the unpredictability and potential evolution in how contributors may use CN in the future, a validation set becomes paramount. This set serves as a means of fine-tuning the model, preventing it from over fitting the historical data and ensuring that it doesn't make assumptions based solely on past patterns. The aim is to create a model that is not only proficient in understanding the existing CN but is also equipped to adapt to unforeseen events and new patterns that may emerge in future note creation.
+
+In summary, the process involves training the model on existing notes, testing its ability to generalize to new notes, and fine-tuning its understanding to ensure adaptability to potential shifts in contributor behavior. This approach is crucial for developing a machine learning model that can robustly predict and comprehend the dynamics of CN, both as they are today and in their future iterations.
 ## Model Building
 
 ```{r}

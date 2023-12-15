@@ -22,12 +22,12 @@ set.seed(1984)
 training_percentage <- 0.75
 
 split_notes <- initial_split(notes_merged,prop = training_percentage)
-training_notes <- training(split_notes)
+train_notes <- training(split_notes)
 test_notes <- testing(split_notes)
 
 # recipe ----
 rec_reg <- recipe(ratings ~  ., 
-              data = training_notes %>% select(-c(note_id, tweet_id ,summary))) %>% 
+              data = train_notes %>% select(-c(note_id, tweet_id ,summary))) %>% 
   step_normalize(agreement_rate) 
 
 
@@ -62,13 +62,13 @@ knn_wkflow <- workflow() %>%
 ## linear ----
 fit_lm <- 
   lm_wkflow %>% 
-  fit(data = training_notes)
+  fit(data = train_notes)
 fit_lm
 
 ## KNN ----
 fit_knn <- 
   knn_wkflow %>% 
-  fit(data = training_notes)
+  fit(data = train_notes)
 fit_knn
 
 # metrics
