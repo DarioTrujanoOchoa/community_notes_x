@@ -16,7 +16,7 @@ vis_miss(slice_sample(notes_merged,prop = 0.1))
 missing_cell <- which(is.na(notes_merged), arr.ind = TRUE)
 notes_merged[missing_cell[,1],]
 # These are the tweet ids
-notes_merged[missing_cell[,1],] %>% select(tweet_id) %>% pull() %>% format(scientific = F)
+notes_merged[missing_cell[,1],] %>% select(tweet_id) %>% pull() %>% format(scientific = F) %>% unique()
 # There is no summary in this notes, probably this was a mistake
 # There is nothing in the note 1370110240532930560 that had 8 ratings. The other two notes were never rated.
 
@@ -51,7 +51,7 @@ notes_merged %>%
   theme_bw()
 
 # The note with most ratings
-notes_merged %>% filter(ratings>8000) %>% arrange(ratings) %>% 
+notes_merged %>% filter(ratings>6000) %>% arrange(ratings) %>% 
   select(tweet_id) %>% 
   pull() %>% 
   format(scientific = F)
@@ -69,3 +69,18 @@ notes_corrplot <- corrplot.mixed(notes_cor,
                                  tl.pos = "lt"
                                  )
 # There is little correlation between the variables 
+
+# Are the rating predicting Status?
+
+notes_merged %>% 
+  filter(ratings > 1, ratings < 2000) %>% 
+  ggplot() +
+  geom_boxplot(aes(x=current_status, y = ratings))
+
+notes_merged %>% group_by(current_status) %>% 
+  summarise(mean(ratings), median(ratings), 
+            quantile(ratings,probs = 0.1), 
+            quantile(ratings,probs = 0.9)
+            )
+
+table(notes_merged$classification, notes_merged$current_status)

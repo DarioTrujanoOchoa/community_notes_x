@@ -7,7 +7,8 @@ library(pacman)
 p_load(tidyverse, 
        lubridate,
        naniar,
-       janitor)
+       janitor,
+       forcats)
 
 # load data ----
 # all the data was downloaded on December 3rd 2023
@@ -77,7 +78,7 @@ table(s_notes$classification,s_notes$is_media_note)
 
 table(s_notes$classification,s_notes$trustworthy_sources)
 
-# select the variables that will be used in the model from the notes dataset
+## Select the variables that will be used in the model from the notes dataset ----
 notes_final <-
   notes %>% select(
     note_id,
@@ -85,9 +86,15 @@ notes_final <-
     classification,
      trustworthy_sources,
      summary, 
-    is_media_note
+    is_media_note,
+    created_at_millis
      ) %>% 
-  mutate(note_length = nchar(summary))
+  mutate(note_length = nchar(summary),
+         created_at = as.POSIXct(created_at_millis, origin="1970-01-01")) %>% 
+  mutate(w_day = wday(created_at, label = T),
+         hour = as_factor(hour(created_at)))
+
+notes %>% slice_sample(n = 10) %>% mutate(w_day = as.POSIXct(created_at_millis, origin="1970-01-01")) %>% select(w_day)
 
 # There is no missing values
 vis_miss(slice_sample(notes_final,prop = 0.1))
