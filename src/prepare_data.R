@@ -94,13 +94,24 @@ vis_miss(slice_sample(notes_final,prop = 0.1))
 
 # status ----
 
-# the observations in the dataset are unique
+# the observations in the dataset are almost unique
 length(unique(status$noteId))
+# however they are all rated as "NEED MORE RATINGS"
+duplicated_notes_status <-
+status %>% group_by(noteId) %>% 
+  summarise(n_notes = n()) %>% 
+  filter(n_notes>1) %>% 
+  pull(noteId) %>% 
+  format(scientific = F)
+status %>% filter(noteId %in% duplicated_notes_status) %>% View()
 
 # Contains -1 if the note never left “Needs More Ratings” status.
 # most of the notes needed more ratings
 sum(status$timestampMillisOfFirstNonNMRStatus==-1)
-barplot(table(status$currentStatus))
+barplot(table(status$currentStatus),
+        ylab = "Number of Notes",
+        xlab = "Current State",
+        main = "Number of Notes by Status")
 
 table(status$currentStatus, status$lockedStatus)
 
@@ -174,7 +185,14 @@ notes_merged <- left_join(notes_final, rates_summarise, by = join_by(noteId)) %>
                   agreement_rate = 0,
                   helpful_rate = 0,
                   not_helpful_rate = 0,
-                  somewhat_helpful_rate = 0))
+                  somewhat_helpful_rate = 0)) 
+
+notes_merged <- 
+  left_join(x = notes_merged, 
+            y = status %>% 
+              filter(!(noteId %in% duplicated_notes_status)) %>% 
+              select(noteId,currentStatus), 
+            by = join_by(noteId))
 notes_merged
 
 
