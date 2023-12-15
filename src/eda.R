@@ -11,7 +11,6 @@ p_load(tidyverse,
 load("data/notes_merged.RData")
 
 # missing data ----
-vis_miss(slice_sample(notes_merged,prop = 0.1))
 # there are 3 rows with missing values
 missing_cell <- which(is.na(notes_merged), arr.ind = TRUE)
 notes_merged[missing_cell[,1],]

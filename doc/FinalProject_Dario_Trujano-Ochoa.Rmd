@@ -30,7 +30,7 @@ This sounds like a great idea, but it has been proven sometimes good but insuffi
 ## How are Notes posted?
 
 At the core of this exploration is the open-source algorithm powering Community Notes, described as ["insanely complicated."](https://uk.finance.yahoo.com/news/bird-watching-going-x-twitter-111442959.html?guccounter=1&guce_referrer=aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnLw&guce_referrer_sig=AQAAAJdoz-CTbAiZoR9yDHum0zUXTqVwhTXSB93ig32XLjzMO5rwCrk9QPJbcaqLCfwL2PcxqZgwd9zWLatoZAJkejGVwDHysvbYkRqcylDIefkFpoRgHDr1O4pvWFXlDV1Dfox1QJGZbGqJsszkp4VCvs_OOEGJVG6QqtL1QyDNA2tZ) This algorithm ensures that notes are rated by a diverse range of perspectives, incorporating an opinion classification based on contributors' alignment with the left and right-wing political spectrum. 
-It is only after people that previusly disagree, agree on the helpfulness of a note that the note is posted.
+It is only after people that previously disagree, agree on the helpfulness of a note that the note is posted.
 Therefore, the number of ratings that a note receives is very important to determine if the note is ever published, and how fast.
 
 ![Fig 3. Community Notes Rating)^[By Twitter - Original publication: Screenshot from CommunityNotesContributorImmediate source: https://twitter.com/i/communitynotes, Fair use, https://en.wikipedia.org/w/index.php?curid=75348629]](images/CommunityNotesRating.png){width=50%, style="display: block; margin: 0 auto;"}
@@ -58,12 +58,146 @@ Here are the sources:
 Since the data sets are very large, I save the final data set with the information I needed from each one. 
 In this section I explain the original data sets and the creation of the final merged data used for the present project. 
 
-## Original Files
+## Original Files and Data Preparation
+
+In this section, I present the code I used to create and mere the raw data to create the final dataset.
+If you want to replicate the code, just crate a folder named `data` on your working directory and download all the data directly from X. 
+This section could be skipped and you can continue to the EDA where I work with the final merged data set. 
+
+The raw data can be [downloaded](https://twitter.com/i/communitynotes/download-data) directly from X, and they provide a good [description](https://communitynotes.twitter.com/guide/en/under-the-hood/download-data) of all the variables in each data set. 
+They update the data continuously. 
+For this project all the data was downloaded December 3rd.
+I will provide a codebook of the final data set I created from the raw data as documentation.
 
 ### Notes
 
+You have to download the file: *notes-00000.tsv* 
+
+```{r, eval=FALSE}
+# packages
+library(pacman)
+p_load(tidyverse, 
+       lubridate,
+       naniar,
+       janitor,
+       forcats)
+
+rm(list = ls())
+
+# load data ----
+# all the data was downloaded on December 3rd 2023
+# notes
+notes <- read_tsv("data/notes-00000.tsv") %>% clean_names()
+
+## Select the variables that will be used in the model from the notes dataset ----
+notes_final <-
+  notes %>% select(
+    note_id,
+    tweet_id,
+    classification,
+     trustworthy_sources,
+     summary, 
+    is_media_note,
+    created_at_millis
+     ) %>% 
+  mutate(created_at = as.POSIXct(created_at_millis, origin="1970-01-01")) %>% 
+  mutate(w_day = wday(created_at, label = T),
+         hour = as_factor(hour(created_at)),
+         note_length = nchar(summary)) %>% 
+  select(-c(created_at_millis,
+            summary))
+
+
+```
+
+### Status
+
+You have to download the file: *noteStatusHistory-00000.tsv* 
+
+```{r, eval=FALSE}
+## status
+status <- read_tsv("data/noteStatusHistory-00000.tsv") %>% clean_names()
+
+# the observations in the dataset are almost unique
+length(unique(status$note_id))
+# however they are all rated as "NEED MORE RATINGS"
+duplicated_notes_status <-
+status %>% group_by(note_id) %>% 
+  summarise(n_notes = n()) %>% 
+  filter(n_notes>1) %>% 
+  pull(note_id) %>% 
+  format(scientific = F)
+status %>% filter(note_id %in% duplicated_notes_status) %>% View()
+
+## select variables from ratings at the notes level ----
+rates_summarise <-
+bind_rows(r0, 
+          r1,
+          r2, 
+          r3) %>% 
+  group_by(note_id) %>% 
+  summarise(
+            ratings = n(),
+            agreement_rate = sum(agree)/n(),
+            helpful_rate = sum(helpfulness_level =="HELPFUL",na.rm = T)/n(),
+            not_helpful_rate = sum(helpfulness_level =="NOT_HELPFUL",na.rm = T)/n(),
+            somewhat_helpful_rate = sum(helpfulness_level =="SOMEWHAT_HELPFUL",na.rm = T)/n()
+            )
+```
+
 ### Ratings
 
+You have to download the files: *ratings-00000.tsv*, *ratings-00001.tsv*, *ratings-00002.tsv*, *ratings-00003.tsv*.
+
+```{r, eval=FALSE}
+## ratings
+r0 <- read_tsv("data/ratings-00000.tsv") %>% clean_names()
+r1 <- read_tsv("data/ratings-00001.tsv") %>% clean_names()
+r2 <- read_tsv("data/ratings-00002.tsv") %>% clean_names()
+r3 <- read_tsv("data/ratings-00003.tsv") %>% clean_names()
+
+## select variables from ratings at the notes level ----
+rates_summarise <-
+bind_rows(r0, 
+          r1,
+          r2, 
+          r3) %>% 
+  group_by(note_id) %>% 
+  summarise(
+            ratings = n(),
+            agreement_rate = sum(agree)/n(),
+            helpful_rate = sum(helpfulness_level =="HELPFUL",na.rm = T)/n(),
+            not_helpful_rate = sum(helpfulness_level =="NOT_HELPFUL",na.rm = T)/n(),
+            somewhat_helpful_rate = sum(helpfulness_level =="SOMEWHAT_HELPFUL",na.rm = T)/n()
+            )
+
+```
+
+### Merging the Data
+
+The previous data sets will be merged in a file named `notes_merged.RData`. 
+This data set contains all the variables used in the analysis, and their description can be found in the codebook. 
+
+```{r, eval=FALSE}
+# merge data ----
+notes_merged <- left_join(notes_final, rates_summarise, by = join_by(note_id)) %>% 
+  # some notes never received ratings, let's replace them with 0
+  replace_na(list(ratings = 0,
+                  agreement_rate = 0,
+                  helpful_rate = 0,
+                  not_helpful_rate = 0,
+                  somewhat_helpful_rate = 0)) 
+notes_merged <- 
+  left_join(x = notes_merged, 
+            y = status %>% 
+              # select onlye the non duplicated rows
+              filter(!(note_id %in% duplicated_notes_status)) %>% 
+              # I only analyze the current status
+              select(note_id,current_status), 
+            by = join_by(note_id))
+
+save(notes_merged,file = "data/notes_merged.RData")
+```
 
 
 ## Original Open Source Data
@@ -89,18 +223,157 @@ p_load(tidyverse,
 
 # EDA
 
-## Final Data
+```{r}
+# packages and data ----
+library(pacman)
+p_load(tidyverse,
+       ggplot2,
+       corrplot)
+
+load("../data/notes_merged.RData")
+```
+
+## Missing data
+
+In the data set there is only 3 values with missing data. 
+Given the magnitude of the data set it won't affect the analysis if we just remove them.
+The ID of the notes with missing data are:
 
 ```{r}
-load("../data/notes_merged.RData")
+# missing data ----
+# there are 3 rows with missing values
+missing_cell <- which(is.na(notes_merged), arr.ind = TRUE)
+# These are the tweet ids
+notes_merged[missing_cell[,1],] %>% select(tweet_id) %>% pull() %>% format(scientific = F) %>% unique()
+# There is no summary in this notes, probably this was a mistake
+# There is nothing in the note 1370110240532930560 that had 8 ratings. The other two notes were never rated.
+
+# I remove the missing values, given the content and the number of missing values this shouldn't be an issue
+notes_merged <- notes_merged %>% drop_na()
+```
+
+
+## Outcome variable: Number of Ratings
+
+Let's first check the summary statistics of the number of ratings in each note:
+
+```{r}
+# Analyzing the outcome variable ----
+summary(notes_merged$ratings)
+```
+
+There is a lot of variability, and it is clear that many notes receive a lot of attention.
+The median is far less than the mean. 
+
+Lets check this looking at the histograms. 
+I separate the notes by the lowest 99% and the highest 1% by number of ratings.
+We can see that many notes are never rated, but many notes receive some level of attention. 
+For the most popular ones, it is clear that one note creates a lot of distortion.
+
+```{r, message=FALSE}
+# 99% of the notes have less than 453 ratings
+q_99 <- quantile(notes_merged$ratings,probs = 0.99)
+
+notes_merged %>% 
+  filter(ratings < q_99) %>% 
+  ggplot() +
+  geom_histogram(aes(x= ratings)) + 
+  labs(
+    title = "Histogram of the number of Ratings on each Note",
+    subtitle = "Percentile 99 of the Ratings",
+    x="Number of Ratings"
+  ) +
+  theme_bw()
+
+notes_merged %>% 
+  filter(ratings >= q_99) %>% 
+  ggplot() +
+  geom_histogram(aes(x= ratings)) + 
+  labs(
+    title = "Histogram of the number of Ratings on each Note",
+    subtitle = "1% of Notes with more Ratings",
+    x="Number of Ratings"
+  ) +
+  theme_bw()
+```
+
+
+The note with the most ratings is about [advertising](https://twitter.com/anyuser/status/1672908357081124864):
+
+```{r}
+# The note with most ratings
+notes_merged %>% filter(ratings>6000) %>% arrange(ratings) %>% 
+  select(tweet_id) %>% 
+  pull() %>% 
+  format(scientific = F)
+```
+
+## Correlations
+
+```{r}
+# Correlations ----
+# Correlation matrix
+notes_cor <- cor(notes_merged %>% 
+                   select(-ends_with("id")) %>% 
+                   select_if(is.numeric))
+
+# Visualization of correlation matrix
+notes_corrplot <- corrplot.mixed(notes_cor, 
+                                 lower = 'shade', upper = 'pie', order = 'hclust', 
+                                 addCoef.col = 1, number.cex = 0.7,
+                                 tl.pos = "lt"
+                                 )
 ```
 
 
 ## Relationship between Ratings and Classification 
 
-# Prepare Data for Analysis 
+It seems that more ratings are associated with the note rated as helpful, which is expected from how the algorithm is described.
+Also, it is notes classified as not "helpful" receive more ratings.
+This is true for looking at the mean, meadian and 10th and 90th quantile.
 
 ```{r}
+notes_merged %>% group_by(current_status) %>% 
+  summarise(mean(ratings), median(ratings), 
+            quantile(ratings,probs = 0.1), 
+            quantile(ratings,probs = 0.9)
+            )
+```
+
+In terms of what the note says about the tweet, more notes say that the tweet is "MISINFORMED_OR_POTENTIALLY_MISLEADING".
+This is specially marked for the notes rated as "HELPFUL" were virtually all the notes say the tweet was misinformed or potentially misleading.
+
+```{r}
+table(notes_merged$classification, notes_merged$current_status)
+```
+
+Finally, the number of ratings is very similar between the classification of notes. 
+
+```{r}
+notes_merged %>% group_by(classification) %>% 
+  summarise(mean(ratings), median(ratings), 
+            quantile(ratings,probs = 0.1), 
+            quantile(ratings,probs = 0.9)
+            )
+```
+# Models
+
+```{r}
+# Load Packages
+library(pacman)
+p_load(tidyverse, 
+       tidymodels, 
+       recipes,
+       kknn,
+       yardstick,
+       tune,
+       ggplot2,
+       ggthemes,
+       rsample,
+       parsnip,
+       workflows
+       )
+
 # To reproduce the results
 set.seed(1984)
 
@@ -113,7 +386,7 @@ training_notes <- training(split_notes)
 test_notes <- testing(split_notes)
 ```
 
-# Model Building
+## Model Building
 
 ```{r}
 # recipe ----
@@ -151,7 +424,7 @@ knn_wkflow <- workflow() %>%
 
 ```
 
-# Model Fitting
+## Model Fitting
 
 ```{r}
 # fitting models ----
