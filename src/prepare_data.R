@@ -95,8 +95,7 @@ notes_final <-
   mutate(w_day = wday(created_at, label = T),
          hour = as_factor(hour(created_at)),
          note_length = nchar(summary)) %>% 
-  select(-c(created_at_millis,
-            summary))
+  select(-c(summary))
 
 # There is no missing values
 vis_miss(slice_sample(notes_final,prop = 0.1))

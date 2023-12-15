@@ -386,7 +386,9 @@ p_load(tidyverse,
        )
 ```
 
-## Data Splitting and Cross Validation
+## Setting up the Data
+
+### Data Splitting
 
 Now, let's split the original data set to make the analysis.
 I decided to use $75\%$ of the data for training, and the sampling is stratified at the outcome variable `ratings`.  
@@ -415,7 +417,20 @@ Much like a training set, a substantial portion of existing notes would be alloc
 
 To account for the unpredictability and potential evolution in how contributors may use CN in the future, a validation set becomes paramount. This set serves as a means of fine-tuning the model, preventing it from over fitting the historical data and ensuring that it doesn't make assumptions based solely on past patterns. The aim is to create a model that is not only proficient in understanding the existing CN but is also equipped to adapt to unforeseen events and new patterns that may emerge in future note creation.
 
-In summary, the process involves training the model on existing notes, testing its ability to generalize to new notes, and fine-tuning its understanding to ensure adaptability to potential shifts in contributor behavior. This approach is crucial for developing a machine learning model that can robustly predict and comprehend the dynamics of CN, both as they are today and in their future iterations.
+## Cross Validation
+
+```{r}
+notes_folds <- vfold_cv(train_notes, v = 10, strata = "ratings")
+```
+
+
+I also  divide the training data from Community Notes into 10 folds to perform a K-Fold Cross Validation.
+This is an advanced technique employed to rigorously evaluate the performance of a machine learning model. The process commences by partitioning the dataset into ten subsets, ensuring an equitable distribution of the Community Notes data. Subsequently, the model undergoes ten iterations of training and testing, where each fold is sequentially designated as the testing set, and the remaining folds collectively form the training set.
+
+During each iteration, the machine learning model is trained on the training set, enabling it to discern intricate patterns and nuances within the Community Notes data. The model's proficiency is then rigorously tested on the designated testing set, elucidating its capacity to generalize across diverse subsets of the dataset. Performance metrics, encompassing accuracy, precision, and recall, are meticulously recorded for each iteration, furnishing a granular assessment of the model's efficacy.
+
+The ultimate evaluation derives from averaging the performance metrics across all ten iterations. This calculated average serves as a comprehensive measure of the model's generalization prowess, providing a nuanced understanding of its robustness in handling the intricacies and variations inherent in the diverse landscape of Community Notes. In essence, the adoption of K-Fold Cross Validation with 10 folds at a graduate level ensures a thorough and reliable evaluation of the machine learning model's competence in understanding and predicting patterns within the multifaceted Community Notes dataset.
+
 ## Model Building
 
 ```{r}

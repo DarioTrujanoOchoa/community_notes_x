@@ -15,10 +15,13 @@ summary: User-entered text, in response to the note writing prompt “Please exp
 is_media_note: User-entered checkbox in response to the question “Is your note about the Tweet or the image?”. New as of 2023-05-24.
 note_length: The number of characters in the summary column.
 
+created_at_millis: Time the note was created, in milliseconds since epoch (UTC).
+
 w_day: Day of the week the note was created.
 
 hour: Hour of the day the note was created.
-ratings: The number of ratings received by the note.
+
+ratings: The number of ratings received by the note.
 
 agreement_rate: Proportion of the ratings where the users agreed on the note. (Agree: binary indicator, based on user-entered multiple choice in response to note rating question “Do you agree with its conclusion?”)
 
