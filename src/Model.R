@@ -21,9 +21,13 @@ set.seed(1984)
 
 training_percentage <- 0.75
 
-split_notes <- initial_split(notes_merged,prop = training_percentage)
+split_notes <- initial_split(notes_merged,
+                             prop = training_percentage,
+                             strata = ratings)
 train_notes <- training(split_notes)
 test_notes <- testing(split_notes)
+
+notes_folds <- vfold_cv(train_notes, v = 10, strata = "ratings")
 
 # recipe ----
 rec_reg <- recipe(ratings ~  ., 
