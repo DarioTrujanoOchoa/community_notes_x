@@ -10,6 +10,8 @@ p_load(tidyverse,
        janitor,
        forcats)
 
+rm(list = ls())
+
 # load data ----
 # all the data was downloaded on December 3rd 2023
 # notes
@@ -89,12 +91,12 @@ notes_final <-
     is_media_note,
     created_at_millis
      ) %>% 
-  mutate(note_length = nchar(summary),
-         created_at = as.POSIXct(created_at_millis, origin="1970-01-01")) %>% 
+  mutate(created_at = as.POSIXct(created_at_millis, origin="1970-01-01")) %>% 
   mutate(w_day = wday(created_at, label = T),
-         hour = as_factor(hour(created_at)))
-
-notes %>% slice_sample(n = 10) %>% mutate(w_day = as.POSIXct(created_at_millis, origin="1970-01-01")) %>% select(w_day)
+         hour = as_factor(hour(created_at)),
+         note_length = nchar(summary)) %>% 
+  select(-c(created_at_millis,
+            summary))
 
 # There is no missing values
 vis_miss(slice_sample(notes_final,prop = 0.1))
@@ -162,6 +164,7 @@ barplot(table(table(r0$note_id)),
 
 table(r0$helpfulness_level)
 
+## select variables from ratings at the notes level ----
 rates_summarise <-
 bind_rows(r0, 
           r1,
@@ -195,7 +198,9 @@ notes_merged <- left_join(notes_final, rates_summarise, by = join_by(note_id)) %
 notes_merged <- 
   left_join(x = notes_merged, 
             y = status %>% 
+              # select onlye the non duplicated rows
               filter(!(note_id %in% duplicated_notes_status)) %>% 
+              # I only analyze the current status
               select(note_id,current_status), 
             by = join_by(note_id))
 notes_merged
