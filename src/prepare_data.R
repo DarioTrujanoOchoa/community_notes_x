@@ -12,20 +12,20 @@ p_load(tidyverse,
 # load data ----
 # all the data was downloaded on December 3rd 2023
 # notes
-notes <- read_tsv("data/notes-00000.tsv")
+notes <- read_tsv("data/notes-00000.tsv") %>% clean_names()
 
 ## status
-status <- read_tsv("data/noteStatusHistory-00000.tsv")
+status <- read_tsv("data/noteStatusHistory-00000.tsv") %>% clean_names()
 
 ## ratings
-r0 <- read_tsv("data/ratings-00000.tsv")
-r1 <- read_tsv("data/ratings-00001.tsv")
-r2 <- read_tsv("data/ratings-00002.tsv")
-r3 <- read_tsv("data/ratings-00003.tsv")
+r0 <- read_tsv("data/ratings-00000.tsv") %>% clean_names()
+r1 <- read_tsv("data/ratings-00001.tsv") %>% clean_names()
+r2 <- read_tsv("data/ratings-00002.tsv") %>% clean_names()
+r3 <- read_tsv("data/ratings-00003.tsv") %>% clean_names()
 
 # Almost all the notes in notes are in status
 # only 20 notes are not there
-sum(notes$noteId %in% status$noteId)
+sum(notes$note_id %in% status$note_id)
 
 s_notes <- slice_sample(notes,n = 10000) 
 s_status <- slice_sample(status,n = 10000) 
@@ -38,25 +38,25 @@ vis_miss(s_status)
 
 ## Authors ----
 # the observations in the dataset are unique for each note
-length(unique(notes$noteId))
+length(unique(notes$note_id))
 
 # the Some notes are made by more than one participant
-length(unique(s_notes$noteAuthorParticipantId))
+length(unique(s_notes$note_author_participant_id))
 # most users publish a note only once (60% in sample) 
-table(table(s_notes$noteAuthorParticipantId)) 
-barplot(table(table(s_notes$noteAuthorParticipantId)),
+table(table(s_notes$note_author_participant_id)) 
+barplot(table(table(s_notes$note_author_participant_id)),
         xlab = "Number of Notes",
         ylab = "Number of Authors",
         main = "Distribution of Notes Published by Author")
 # ID of prolific authors
-head(sort(table(s_notes$noteAuthorParticipantId),decreasing = T),n = 25 )
+head(sort(table(s_notes$note_author_participant_id),decreasing = T), n = 25)
 
 ## Tweets ----
 # some tweets have more than one note
 # most of the tweets have a single note
-length(unique(notes$tweetId))
+length(unique(notes$tweet_id))
 
-barplot(table(table(s_notes$tweetId)),
+barplot(table(table(s_notes$tweet_id)),
         xlab = "Number of Notes",
         ylab = "Number of Tweets",
         main = "Distribution of Notes Published by Tweet")
@@ -72,20 +72,20 @@ as_tibble(s_notes) %>%
 
 
 
-table(s_notes$classification,s_notes$notMisleadingOther)
-table(s_notes$classification,s_notes$isMediaNote)
+table(s_notes$classification,s_notes$not_misleading_other)
+table(s_notes$classification,s_notes$is_media_note)
 
-table(s_notes$classification,s_notes$trustworthySources)
+table(s_notes$classification,s_notes$trustworthy_sources)
 
 # select the variables that will be used in the model from the notes dataset
 notes_final <-
   notes %>% select(
-    noteId,
-    tweetId,
+    note_id,
+    tweet_id,
     classification,
-     trustworthySources,
+     trustworthy_sources,
      summary, 
-     isMediaNote
+    is_media_note
      ) %>% 
   mutate(note_length = nchar(summary))
 
@@ -95,78 +95,78 @@ vis_miss(slice_sample(notes_final,prop = 0.1))
 # status ----
 
 # the observations in the dataset are almost unique
-length(unique(status$noteId))
+length(unique(status$note_id))
 # however they are all rated as "NEED MORE RATINGS"
 duplicated_notes_status <-
-status %>% group_by(noteId) %>% 
+status %>% group_by(note_id) %>% 
   summarise(n_notes = n()) %>% 
   filter(n_notes>1) %>% 
-  pull(noteId) %>% 
+  pull(note_id) %>% 
   format(scientific = F)
-status %>% filter(noteId %in% duplicated_notes_status) %>% View()
+status %>% filter(note_id %in% duplicated_notes_status) %>% View()
 
 # Contains -1 if the note never left “Needs More Ratings” status.
 # most of the notes needed more ratings
-sum(status$timestampMillisOfFirstNonNMRStatus==-1)
-barplot(table(status$currentStatus),
+sum(status$timestamp_millis_of_first_non_nmr_status==-1)
+barplot(table(status$current_status),
         ylab = "Number of Notes",
         xlab = "Current State",
         main = "Number of Notes by Status")
 
-table(status$currentStatus, status$lockedStatus)
-
+# most status are kept the same
+table(status$current_status, status$locked_status)
 
 # ratings ----
 
 # there are 109,142 raters. Small for the number of notes.
 # they cover 
-length(unique(r0$raterParticipantId))
+length(unique(r0$rater_participant_id))
 
 # only 13 people in r3 were in r1
 # 42 people in r1 were in r3
 # There is no more repetitions
-sum(r1$raterParticipantId %in% 
-       r3$raterParticipantId)
+sum(r1$rater_participant_id %in% 
+       r3$rater_participant_id)
 
-barplot(table(table(r0$raterParticipantId)),
+barplot(table(table(r0$rater_participant_id)),
         xlab = "Number of Ratings",
         ylab = "Number of Raters",
         main = "Distribution of Ratings Published by Rater")
 
 ## ratings in notes ----
 # most of the notes are in the ratings dataset
-sum(r0$noteId %in% notes$noteId)
-sum(r1$noteId %in% notes$noteId)
-sum(r2$noteId %in% notes$noteId)
-sum(r3$noteId %in% notes$noteId)
+sum(r0$note_id %in% notes$note_id)
+sum(r1$note_id %in% notes$note_id)
+sum(r2$note_id %in% notes$note_id)
+sum(r3$note_id %in% notes$note_id)
 
-mean(notes$noteId %in% r0$noteId)
-mean(notes$noteId %in% r1$noteId)
-mean(notes$noteId %in% r2$noteId)
-mean(notes$noteId %in% r3$noteId)
+mean(notes$note_id %in% r0$note_id)
+mean(notes$note_id %in% r1$note_id)
+mean(notes$note_id %in% r2$note_id)
+mean(notes$note_id %in% r3$note_id)
 
-mean(r3$noteId %in% r1$noteId)
+mean(r3$note_id %in% r1$note_id)
 
 # Most notes have few ratings
-barplot(table(table(r0$noteId)),
+barplot(table(table(r0$note_id)),
         xlab = "Number of Ratings",
         ylab = "Number of Notes",
         main = "Distribution of Ratings Published by Note")
 
-table(r0$helpfulnessLevel)
+table(r0$helpfulness_level)
 
 rates_summarise <-
 bind_rows(r0, 
           r1,
           r2, 
           r3) %>% 
-  group_by(noteId) %>% 
+  group_by(note_id) %>% 
   summarise(
             ratings = n(),
             agreement_rate = sum(agree)/n(),
-            helpful_rate = sum(helpfulnessLevel =="HELPFUL",na.rm = T)/n(),
-            not_helpful_rate = sum(helpfulnessLevel =="NOT_HELPFUL",na.rm = T)/n(),
-            somewhat_helpful_rate = sum(helpfulnessLevel =="SOMEWHAT_HELPFUL",na.rm = T)/n()
+            helpful_rate = sum(helpfulness_level =="HELPFUL",na.rm = T)/n(),
+            not_helpful_rate = sum(helpfulness_level =="NOT_HELPFUL",na.rm = T)/n(),
+            somewhat_helpful_rate = sum(helpfulness_level =="SOMEWHAT_HELPFUL",na.rm = T)/n()
             )
 
 rates_summarise
@@ -176,23 +176,21 @@ vis_miss(slice_sample(rates_summarise,prop = 0.1))
 # merge data ----
 # Notes in both data sets are not exactly the same
 # 9.3% of the notes never received ratings 
-1 - mean(notes_final$noteId %in% rates_summarise$noteId)
+1 - mean(notes_final$note_id %in% rates_summarise$note_id)
 
-notes_merged <- left_join(notes_final, rates_summarise, by = join_by(noteId)) %>% 
-  clean_names() %>% # let's clean the data names
-  # some notes never received ratings, lte's replace them with 0
+notes_merged <- left_join(notes_final, rates_summarise, by = join_by(note_id)) %>% 
+  # some notes never received ratings, let's replace them with 0
   replace_na(list(ratings = 0,
                   agreement_rate = 0,
                   helpful_rate = 0,
                   not_helpful_rate = 0,
                   somewhat_helpful_rate = 0)) 
-
 notes_merged <- 
   left_join(x = notes_merged, 
             y = status %>% 
-              filter(!(noteId %in% duplicated_notes_status)) %>% 
-              select(noteId,currentStatus), 
-            by = join_by(noteId))
+              filter(!(note_id %in% duplicated_notes_status)) %>% 
+              select(note_id,current_status), 
+            by = join_by(note_id))
 notes_merged
 
 
