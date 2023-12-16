@@ -31,7 +31,7 @@ notes_merged <- notes_merged %>%
   filter(created_at > "2022-11-25 15:30:30 UTC") %>% 
   slice_sample(prop = 0.05)
 
-summary(notes_merged)
+save(notes_merged, file = "data/notes_merged_sample.RData")
   
 # Split data and cross validation ----
 training_percentage <- 0.75
@@ -98,7 +98,7 @@ lm_wkflow <- workflow() %>%
   # add receipe
   add_recipe(rec_reg)
 
-## POLYNOMIAL REGRESSION ----
+## Polynomial Regression ----
 poly_wf <- workflow() %>% 
   add_model(poly_spec) %>% 
   add_recipe(poly_rec)
@@ -124,10 +124,10 @@ rf_wkflow <- workflow() %>%
   # add receipe
   add_recipe(rec_reg)
 
-# Grids for tunning parameters ----
+# Grids for tuning parameters ----
 # For the Linear model there is no parameter to tune, so I don't need a grid or tuning.
 
-## POLYNOMIAL REGRESSION ----
+## Polynomial Regression ----
 degree_grid <- grid_regular(degree(range = c(1,5)), levels = 5)
 
 ## KNN ----
@@ -147,8 +147,8 @@ rf_grid <- grid_regular(mtry(range = c(1, 12)),
 
 # Tuning ----
 
-## POLYNOMIAL REGRESSION ----
-poly_tuned <- tune_grid(
+## Polynomial Regression ----
+poly_tune <- tune_grid(
   poly_wf,
   resamples = notes_folds,
   grid = degree_grid
@@ -169,7 +169,7 @@ en_tune <- tune_grid(
 )
 
 ## RF ----
-rf_tune_res <- tune_grid(
+rf_tune <- tune_grid(
   rf_wkflow,
   resamples = notes_folds,
   grid = rf_grid
@@ -178,7 +178,7 @@ rf_tune_res <- tune_grid(
 # Save tuning results ----
 
 ## Polynomial Regression ----
-write_rds(poly_tuned, file = "data/tuned_models/poly.rds")
+write_rds(poly_tune, file = "data/tuned_models/poly.rds")
 
 ## KNN ----
 write_rds(knn_tune, file = "data/tuned_models/knn.rds")
@@ -187,21 +187,21 @@ write_rds(knn_tune, file = "data/tuned_models/knn.rds")
 write_rds(en_tune, file = "data/tuned_models/elastic.rds")
 
 ## RF ----
-write_rds(rf_tune_res, file = "data/tuned_models/rf.rds")
+write_rds(rf_tune, file = "data/tuned_models/rf.rds")
 
 # Load tuning results ----
 
 ## Polynomial Regression ----
-poly_tuned <- read_rds(file = "data/tuned_models/poly.rds")
+poly_tune <- read_rds(file = "data/tuned_models/poly.rds")
 
 ## KNN ----
-read_rds(file = "data/tuned_models/knn.rds")
+knn_tune <- read_rds(file = "data/tuned_models/knn.rds")
 
 ## EN ----
-read_rds(file = "data/tuned_models/elastic.rds")
+en_tune <- read_rds(file = "data/tuned_models/elastic.rds")
 
 ## RF ----
-read_rds(file = "data/tuned_models/rf.rds")
+rf_tune <- read_rds(file = "data/tuned_models/rf.rds")
 
 # Compare models ----
 # collect metrics 
@@ -210,23 +210,21 @@ lm_fit <- fit_resamples(lm_wkflow, resamples = notes_folds)
 lm_rmse <- collect_metrics(lm_fit) %>% 
   slice(1)
 
-# # POLYNOMIAL REGRESSION ----
-poly_rmse <- collect_metrics(poly_tuned) %>% 
-  arrange(mean) %>% 
-  slice(6)
+## Polynomial Regression ----
+poly_rmse <- show_best(poly_tune,metric = "rmse",n = 1) %>% 
+  select(mean) %>% pull()
 
 ## KKN ----
 knn_rmse <- show_best(knn_tune,metric = "rmse",n = 1) %>% 
   select(mean) %>% pull()
 
 ## EN ----
-elastic_rmse <- show_best(en_tune,metric = "rmse",n = 1) %>% 
+en_rmse <- show_best(en_tune,metric = "rmse",n = 1) %>% 
   select(mean) %>% pull()
 
 ## RF ----
-rf_rmse <- collect_metrics(rf_tuned) %>% 
-  arrange(mean) %>% 
-  slice(513)
+rf_rmse <- show_best(rf_tune,metric = "rmse",n = 1) %>% 
+  select(mean) %>% pull()
 
 # Creating a tibble of all the models and their RMSE
 final_compare_tibble <- tibble(
@@ -234,15 +232,15 @@ final_compare_tibble <- tibble(
     "Linear Regression", 
     "K Nearest Neighbors",
     "Elastic Net",
-    # "Random Forest",
+    "Random Forest",
     "Polynomial Regression"
     ), 
   RMSE = c(
    lm_rmse$mean, 
    knn_rmse,
-   elastic_rmse,
-   # rf_rmse$mean,
-   poly_rmse$mean
+   en_rmse,
+   rf_rmse,
+   poly_rmse
     ))
 
 # Arranging by lowest RMSE
@@ -252,11 +250,11 @@ final_compare_tibble <- final_compare_tibble %>%
 final_compare_tibble
 
 # Best model ----
-show_best(poly_tuned, metric = 'rmse', n=1)
-best_train <- select_best(poly_tuned, metric = 'rmse')
+show_best(rf_tune, metric = 'rmse', n=1)
+best_train <- select_best(rf_tune, metric = 'rmse')
 
 ## Fit to training data ----
-final_workflow_train <- finalize_workflow(poly_wf, best_train)
+final_workflow_train <- finalize_workflow(rf_wkflow, best_train)
 final_fit_train <- fit(final_workflow_train, data = train_notes)
 
 ## Testing the model ----
@@ -277,8 +275,8 @@ notes_tibble %>%
 
 # Let's focus on the notes with not that many ratings
 notes_tibble %>% 
-  filter(.pred < 50,
-         ratings < 50) %>% 
+  filter(.pred < 500,
+         ratings < 500) %>% 
   ggplot(aes(x = .pred, y = ratings)) +
   geom_point(alpha = 0.4) +
   geom_abline(lty = 2) +

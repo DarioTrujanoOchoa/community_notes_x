@@ -389,11 +389,37 @@ p_load(tidyverse,
        ggthemes,
        rsample,
        parsnip,
-       workflows
+       workflows, 
+       vip
        )
 ```
 
 ## Setting up the Data
+
+The data is very large, and the models were already taking several minutes to finish.
+Because of this, I decided to take a $5\%$ random sample of the complete data.
+This sample data is still large, with more than $17,000$ observations.
+
+```{r, eval=FALSE}
+# To reproduce the results
+set.seed(1984)
+
+# Load data ----
+load("data/notes_merged.RData")
+
+# lets get a subset of the data
+notes_merged <- notes_merged %>% 
+  filter(created_at > "2022-11-25 15:30:30 UTC") %>% 
+  slice_sample(prop = 0.05)
+
+# Sample from the original data set
+save(notes_merged, file = "data/notes_merged_sample.RData")
+```
+
+```{r}
+load("../data/notes_merged_sample.RData")
+```
+
 
 ### Data Splitting and Stratification
 
@@ -401,13 +427,9 @@ Now, let's split the original data set to make the analysis.
 I decided to use $75\%$ of the data for training, and the sampling is stratified at the outcome variable `ratings`.  
 
 ```{r}
-# To reproduce the results
-set.seed(1984)
-
-# Percentage used for the training set
+# Split data and cross validation ----
 training_percentage <- 0.75
 
-# Splitting the data
 split_notes <- initial_split(notes_merged,
                              prop = training_percentage,
                              strata = ratings)
@@ -427,7 +449,8 @@ To account for the unpredictability and potential evolution in how contributors 
 ### Cross Validation
 
 ```{r}
-notes_folds <- vfold_cv(train_notes, v = 10, strata = "ratings")
+v_folds <- 10
+notes_folds <- vfold_cv(train_notes, v = v_folds, strata = "ratings")
 ```
 
 
@@ -442,21 +465,53 @@ The ultimate evaluation derives from averaging the performance metrics across al
 
 ### Recipe,  Models and Workflow
 
-```{r, eval=FALSE}
+To adjust the data I used all the predictors, except `for note_id`, `tweet_id`, `created_at`, and `current_status`. 
+The first two variables are IDs, and the later two shouldn't have an effect. 
+As mentioned in the EDA section, `created_at_millis` has a small correlation with the ratings, and this variable capture the effect of time, so `created_at` is redundant. 
+Other cyclical effects of time are analyzed with the `hour` and `w_day` variables.
+Finally, `current_status` is a consequence of the number of ratings, and not the other way around.
+Therefore, is of little interest as a predictor.
+
+Dummy variables were created in the recipe for `w_day`, `hour`, and `classification`.
+Finally, the predictors were normalized and the constant withdrawn.
+It is worth mentioning that the variable `agreement_rate` became constant because frequently this variable was $0$. 
+Other sampling stratified by this variable could have been used, but since the correlation with `ratings` was minimal.
+
+```{r}
 # Recipe ----
 rec_reg <- recipe(ratings ~  ., 
               data = train_notes) %>% 
   step_rm(note_id, tweet_id, 
           created_at, current_status) %>% 
   step_dummy(w_day, hour, classification) %>% 
-  step_normalize(agreement_rate) 
+  step_zv(all_predictors()) %>% 
+  step_normalize(all_numeric_predictors()) 
 ```
+
+I will evaluate five different models:
+
+- Linear Regression
+- Polynomial Regression
+- K Nearest Neighbors
+- Elastic Net
+- Random Forest
+
+To calculate the models, let's start with giving the specifications for each one, and continue creating the workflow for each model:
 
 ```{r}
 # Models ----
 ##linear model ----
 linear_reg <- linear_reg() %>%
   set_mode("regression") %>%
+  set_engine("lm")
+
+# Polinomial Regression ----
+poly_rec <- rec_reg %>% 
+  step_poly(note_length, helpful_rate, not_helpful_rate,
+            degree = tune())
+
+poly_spec <- linear_reg() %>% 
+  set_mode("regression") %>% 
   set_engine("lm")
 
 # KNN model
@@ -479,10 +534,6 @@ rf_mod <- rand_forest(mtry = tune(),
   set_engine("ranger", importance = "impurity") %>% 
   set_mode("regression")
 
-```
-
-
-```{r, eval=FALSE}
 # Workflow ----
 ## Linear ----
 lm_wkflow <- workflow() %>% 
@@ -490,6 +541,11 @@ lm_wkflow <- workflow() %>%
   add_model(linear_reg) %>% 
   # add receipe
   add_recipe(rec_reg)
+
+## POLYNOMIAL REGRESSION ----
+poly_wf <- workflow() %>% 
+  add_model(poly_spec) %>% 
+  add_recipe(poly_rec)
 
 ## KNN ----
 knn_wkflow <- workflow() %>% 
@@ -511,15 +567,21 @@ rf_wkflow <- workflow() %>%
   add_model(rf_mod) %>% 
   # add receipe
   add_recipe(rec_reg)
-
 ```
 
 
-## Tuning the Parameters
+### Grids
+
+All the model have parameters to be tune, except for the linear model. 
+Let's create a grid for the parameter to evaluate in each model:
 
 ```{r, eval=FALSE}
-# Grids for tunning parameters ----
+# Grids for tuning parameters ----
 # For the Linear model there is no parameter to tune, so I don't need a grid or tuning.
+
+## POLYNOMIAL REGRESSION ----
+degree_grid <- grid_regular(degree(range = c(1,5)), levels = 5)
+
 ## KNN ----
 knn_grid <- grid_regular(neighbors(range = c(1,15)), 
                          levels = 5)
@@ -531,11 +593,29 @@ en_grid <- grid_regular(penalty(range = c(-5, 5)),
 
 ## RF ----
 rf_grid <- grid_regular(mtry(range = c(1, 12)), 
-                                  trees(range = c(200,1000)), 
+                                  trees(range = c(20,60)), 
                                   min_n(range = c(5,20)), 
                                   levels = 8)
 
+```
+
+
+## Tuning the Parameters
+
+Now that the recipe, models, workflows, and grids are ready for each model, let's tune them. 
+Remember that the linear model has no parameters to evaluate, so it it is not tuned.
+Finally, I save all the results from this process that is the most time consuming. 
+
+```{r, eval=FALSE}
 # Tuning ----
+
+## POLYNOMIAL REGRESSION ----
+poly_tuned <- tune_grid(
+  poly_wf,
+  resamples = notes_folds,
+  grid = degree_grid
+)
+
 ## KKN ----
 knn_tune <- tune_grid(
   knn_wkflow,
@@ -551,7 +631,7 @@ en_tune <- tune_grid(
 )
 
 ## RF ----
-rf_tune_res <- tune_grid(
+rf_tune <- tune_grid(
   rf_wkflow,
   resamples = notes_folds,
   grid = rf_grid
@@ -559,36 +639,158 @@ rf_tune_res <- tune_grid(
 
 # Save tuning results ----
 
+## Polynomial Regression ----
+write_rds(poly_tuned, file = "data/tuned_models/poly.rds")
+
 ## KNN ----
 write_rds(knn_tune, file = "data/tuned_models/knn.rds")
 
 ## EN ----
-write_rds(elastic_tune, file = "data/tuned_models/elastic.rds")
+write_rds(en_tune, file = "data/tuned_models/elastic.rds")
 
 ## RF ----
-write_rds(rf_tune_res, file = "data/tuned_models/rf.rds")
+write_rds(rf_tune, file = "data/tuned_models/rf.rds")
 
 ```
 
-Finally, we save all the results from the tuning process. 
 For the present document, we used the data stored in this files instead of running all the analysis again when knitting the Rmd file.
+Tuning the parameters took several minutes even considering that this is only $5\%$ of the available data.
 
-```{r, eval=FALSE}
-# Load tunning results ----
+```{r}
+# Load tuning results ----
+
+## Polynomial Regression ----
+poly_tune <- read_rds(file = "../data/tuned_models/poly.rds")
+
 ## KNN ----
-read_rds(knn_tune, file = "data/tuned_models/knn.rds")
+knn_tune <- read_rds(file = "../data/tuned_models/knn.rds")
 
 ## EN ----
-read_rds(elastic_tune, file = "data/tuned_models/elastic.rds")
+en_tune <- read_rds(file = "../data/tuned_models/elastic.rds")
 
 ## RF ----
-read_rds(rf_tune_res, file = "data/tuned_models/rf.rds")
+rf_tune <- read_rds(file = "../data/tuned_models/rf.rds")
+```
+
+# Model Comparisson
+
+Let's calculate the RMSE for each one the five models.
+
+```{r}
+# Compare models ----
+## Linear ----
+lm_fit <- fit_resamples(lm_wkflow, resamples = notes_folds)
+lm_rmse <- collect_metrics(lm_fit) %>% 
+  slice(1)
+
+## Polynomial Regression ----
+poly_rmse <- show_best(poly_tune,metric = "rmse",n = 1) %>% 
+  select(mean) %>% pull()
+
+## KKN ----
+knn_rmse <- show_best(knn_tune,metric = "rmse",n = 1) %>% 
+  select(mean) %>% pull()
+
+## EN ----
+en_rmse <- show_best(en_tune,metric = "rmse",n = 1) %>% 
+  select(mean) %>% pull()
+
+## RF ----
+rf_rmse <- show_best(rf_tune,metric = "rmse",n = 1) %>% 
+  select(mean) %>% pull()
+
+```
+
+Now, let's see the results in a table:
+
+```{r}
+# Creating a tibble of all the models and their RMSE
+final_compare_tibble <- tibble(
+  Model = c(
+    "Linear Regression", 
+    "K Nearest Neighbors",
+    "Elastic Net",
+    "Random Forest",
+    "Polynomial Regression"
+    ), 
+  RMSE = c(
+   lm_rmse$mean, 
+   knn_rmse,
+   en_rmse,
+   rf_rmse,
+   poly_rmse
+    )) %>% 
+  arrange(RMSE)
+
+rmarkdown::paged_table(
+  final_compare_tibble
+)
+
 ```
 
 
 # Best Model
 
+The best model was the random forest.
+The values that better fit the model were mtry=$10$, trees=$54$, min=$20$.
+Then, I have to fit the best model to the training data to get the parameters of the random forest.
+Finally, I am ready to implement the best random forest model to the testing data.
+
 ```{r}
+# Best model ----
+show_best(rf_tune, metric = 'rmse', n=1)
+best_train <- select_best(rf_tune, metric = 'rmse')
+
+## Fit to training data ----
+final_workflow_train <- finalize_workflow(rf_wkflow, best_train)
+final_fit_train <- fit(final_workflow_train, data = train_notes)
+
+## Testing the model ----
+
+# Creating the predicted vs. actual value tibble
+notes_tibble <- predict(final_fit_train, new_data = test_notes %>% select(-ratings))
+notes_tibble <- bind_cols(notes_tibble, test_notes %>% select(ratings))
+```
+
+To see how the model predicts the testing data we can plot the number of ratings original data and the prediction made with the estimated model.
+In the first of the following two graphs, we can see that the model is not adjusting very well, specially for the notes that are very popular and have a large number of ratings.
+In the second graph, I filtered the observation to see if the adjustment is better for notes with less number of ratings. 
+
+```{r}
+# Creating plot of predicted values vs. actual values
+notes_tibble %>% 
+  ggplot(aes(x = .pred, y = ratings)) +
+  geom_point(alpha = 0.4) +
+  geom_abline(lty = 2) +
+  theme_grey() +
+  coord_obs_pred() +
+  labs(title = "Predicted Values vs. Actual Values",
+       x = "Model Prediction")
+
+# Let's focus on the notes with not that many ratings
+notes_tibble %>% 
+  filter(.pred < 500,
+         ratings < 500) %>% 
+  ggplot(aes(x = .pred, y = ratings)) +
+  geom_point(alpha = 0.4) +
+  geom_abline(lty = 2) +
+  # xlim(0, 50) +
+  # ylim(0, 50) +
+  theme_grey() +
+  coord_obs_pred() +
+  labs(title = "Predicted Values vs. Actual Values for Notes with less than 500 Ratings",
+       x = "Model Prediction")
+
+```
+
+Finally, let's evaluate what are the variables that are more useful predicting the number or ratings in the notes.
+
+```{r}
+## VIP ----
+# Using the training fit to create the VIP because the model was not actually fit to the testing data
+final_fit_train %>% 
+  extract_fit_engine() %>% 
+  vip(aesthetics = list(fill = "red3", color = "blue3"))
 
 ```
 
