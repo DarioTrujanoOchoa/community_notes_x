@@ -586,39 +586,14 @@ read_rds(rf_tune_res, file = "data/tuned_models/rf.rds")
 ```
 
 
-## Model Fitting
+# Best Model
 
 ```{r}
-# fitting models ----
-## linear ----
-# fit_lm <- 
-#   lm_wkflow %>% 
-#   fit(data = )
-# fit_lm
-# 
-# ## KNN ----
-# fit_knn <- 
-#   knn_wkflow %>% 
-#   fit(data = )
-# fit_knn
-# 
-# # metrics
-# notes_metrics <- metric_set(rmse, rsq, mae)
-# 
-# # linear model
-# notes_lm_aug <- augment(fit_lm, test_notes)
-# notes_metrics(notes_lm_aug, truth = ratings,
-#                 estimate = .pred)
-# 
-# notes_merged %>% ggplot() +
-#   geom_point(aes(x=agreement_rate,y=ratings))
-
-# knn model
-# notes_knn_aug <- augment(fit_knn, test_notes)
-# notes_metrics(notes_knn_aug, truth = ratings,
-#               estimate = .pred)
 
 ```
 
+
 # Conclusion
+
+The variable `agreement_rate` had little variability. For the sample 
 
