@@ -317,6 +317,13 @@ notes_corrplot <- corrplot.mixed(notes_cor,
                                  )
 ```
 
+The strongest correlations are between the length of the note and if the note has a trustworthy source (`r cor(notes_merged$note_length, notes_merged$trustworthy_sources)`), if the note has rated as helpful or not helpful (`r cor(notes_merged$helpful_rate, notes_merged$not_helpful_rate)`), the agreement rate with the time (in milliseconds) the note was created (`r cor(notes_merged$agreement_rate, notes_merged$created_at_millis)`), and the helpful level with the time the note was created (`r cor(notes_merged$helpful_rate, notes_merged$created_at_millis)`).
+The correlations are in general very low between the numeric predictors.
+
+The correlation of helpfulness with non helpfulness is expected since when user rate the only other option is "somewhat helpful". This is the reason the correlation is not perfectly negative. 
+It is interesting to notice that the agreement decreased with the time the note was created, meaning that with more time of this policy, people started to agreed less, which is expected if more people if more people is participating, however the correlation between the time of creation and number of ratings is low. 
+It is interesting that the time of creation is at the same time increasing the both the helpful and non helpful rates. 
+This might be related to the fact that people have become more certain in their ratings since less people is selecting the somewhat helpful option. 
 
 ## Relationship between Ratings and Classification 
 
@@ -417,7 +424,7 @@ Much like a training set, a substantial portion of existing notes would be alloc
 
 To account for the unpredictability and potential evolution in how contributors may use CN in the future, a validation set becomes paramount. This set serves as a means of fine-tuning the model, preventing it from over fitting the historical data and ensuring that it doesn't make assumptions based solely on past patterns. The aim is to create a model that is not only proficient in understanding the existing CN but is also equipped to adapt to unforeseen events and new patterns that may emerge in future note creation.
 
-## Cross Validation
+### Cross Validation
 
 ```{r}
 notes_folds <- vfold_cv(train_notes, v = 10, strata = "ratings")
