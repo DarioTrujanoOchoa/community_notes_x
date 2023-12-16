@@ -16,7 +16,8 @@ p_load(tidyverse,
        parsnip,
        workflows,
        glmnet,
-       ranger
+       ranger,
+       vip
        )
 
 set.seed(1984)
@@ -191,16 +192,16 @@ write_rds(rf_tune_res, file = "data/tuned_models/rf.rds")
 # Load tuning results ----
 
 ## Polynomial Regression ----
-read_rds(poly_tuned, file = "data/tuned_models/poly.rds")
+poly_tuned <- read_rds(file = "data/tuned_models/poly.rds")
 
 ## KNN ----
-read_rds(knn_tune, file = "data/tuned_models/knn.rds")
+read_rds(file = "data/tuned_models/knn.rds")
 
 ## EN ----
-read_rds(elastic_tune, file = "data/tuned_models/elastic.rds")
+read_rds(file = "data/tuned_models/elastic.rds")
 
 ## RF ----
-read_rds(rf_tune_res, file = "data/tuned_models/rf.rds")
+read_rds(file = "data/tuned_models/rf.rds")
 
 # Compare models ----
 # collect metrics 
@@ -251,19 +252,14 @@ final_compare_tibble <- final_compare_tibble %>%
 final_compare_tibble
 
 # Best model ----
-show_best(poly_tuned, metric = 'rmse')
+show_best(poly_tuned, metric = 'rmse', n=1)
 best_train <- select_best(poly_tuned, metric = 'rmse')
 
 ## Fit to training data ----
 final_workflow_train <- finalize_workflow(poly_wf, best_train)
-final_fit_train <- fit(final_workflow, data = notes_train)
-
-# Save
-write_rds(rf_final_fit_train, file = "data/tuned_models/final_train.rds")
+final_fit_train <- fit(final_workflow_train, data = train_notes)
 
 ## Testing the model ----
-# Loading in the training data fit
-final_fit_train <- read_rds(file = "data/tuned_models/final_train.rds")
 
 # Creating the predicted vs. actual value tibble
 notes_tibble <- predict(final_fit_train, new_data = test_notes %>% select(-ratings))
@@ -276,8 +272,24 @@ notes_tibble %>%
   geom_abline(lty = 2) +
   theme_grey() +
   coord_obs_pred() +
-  labs(title = "Predicted Values vs. Actual Values")
+  labs(title = "Predicted Values vs. Actual Values",
+       x = "Model Prediction")
 
+# Let's focus on the notes with not that many ratings
+notes_tibble %>% 
+  filter(.pred < 50,
+         ratings < 50) %>% 
+  ggplot(aes(x = .pred, y = ratings)) +
+  geom_point(alpha = 0.4) +
+  geom_abline(lty = 2) +
+  # xlim(0, 50) +
+  # ylim(0, 50) +
+  theme_grey() +
+  coord_obs_pred() +
+  labs(title = "Predicted Values vs. Actual Values",
+       x = "Model Prediction")
+
+## VIP ----
 # Using the training fit to create the VIP because the model was not actually fit to the testing data
 final_fit_train %>% 
   extract_fit_engine() %>% 
