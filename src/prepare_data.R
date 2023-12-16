@@ -91,7 +91,7 @@ notes_final <-
     is_media_note,
     created_at_millis
      ) %>% 
-  mutate(created_at = as.POSIXct(created_at_millis, origin="1970-01-01")) %>% 
+  mutate(created_at = as.POSIXct(created_at_millis / 1000, origin = "1970-01-01")) %>% 
   mutate(w_day = wday(created_at, label = T),
          hour = as_factor(hour(created_at)),
          note_length = nchar(summary)) %>% 
@@ -181,6 +181,8 @@ bind_rows(r0,
 rates_summarise
 # There is no missing values
 vis_miss(slice_sample(rates_summarise,prop = 0.1))
+
+save(rates_summarise,file = "data/rates_summarise.RData")
 
 # merge data ----
 # Notes in both data sets are not exactly the same

@@ -228,6 +228,7 @@ load("../data/notes_merged.RData")
 ## Missing data
 
 In the data set there is only 3 values with missing data. 
+When I looked for these specific tweets there were nothing posted. I assume this were mistakes.
 Given the magnitude of the data set it won't affect the analysis if we just remove them.
 The ID of the notes with missing data are:
 
@@ -243,7 +244,6 @@ notes_merged[missing_cell[,1],] %>% select(tweet_id) %>% pull() %>% format(scien
 # I remove the missing values, given the content and the number of missing values this shouldn't be an issue
 notes_merged <- notes_merged %>% drop_na()
 ```
-
 
 ## Outcome variable: Number of Ratings
 
@@ -395,7 +395,7 @@ p_load(tidyverse,
 
 ## Setting up the Data
 
-### Data Splitting
+### Data Splitting and Stratification
 
 Now, let's split the original data set to make the analysis.
 I decided to use $75\%$ of the data for training, and the sampling is stratified at the outcome variable `ratings`.  
@@ -440,41 +440,151 @@ The ultimate evaluation derives from averaging the performance metrics across al
 
 ## Model Building
 
-```{r}
-# recipe ----
+### Recipe,  Models and Workflow
+
+```{r, eval=FALSE}
+# Recipe ----
 rec_reg <- recipe(ratings ~  ., 
-              data = train_notes %>% select(-c(note_id, tweet_id ,summary))) %>% 
+              data = train_notes) %>% 
+  step_rm(note_id, tweet_id, 
+          created_at, current_status) %>% 
+  step_dummy(w_day, hour, classification) %>% 
   step_normalize(agreement_rate) 
+```
 
-
-# models ----
+```{r}
+# Models ----
 ##linear model ----
 linear_reg <- linear_reg() %>%
   set_mode("regression") %>%
   set_engine("lm")
 
 # KNN model
-k = 7
-knn_mod <- nearest_neighbor(neighbors = k) %>%
+knn_mod <- nearest_neighbor(neighbors = tune()) %>%
   set_mode("regression") %>%
   set_engine("kknn")
 
+## Elastic net ----
+# Tuning penalty and mixture
+en_mod <- linear_reg(penalty = tune(), 
+                           mixture = tune()) %>% 
+  set_mode("regression") %>% 
+  set_engine("glmnet")
+
+## Random forest ----
+# Tuning mtry (number of predictors), trees, and min_n (number of minimum values in each node)
+rf_mod <- rand_forest(mtry = tune(), 
+                       trees = tune(), 
+                       min_n = tune()) %>% 
+  set_engine("ranger", importance = "impurity") %>% 
+  set_mode("regression")
+
+```
+
+
+```{r, eval=FALSE}
 # Workflow ----
-## linear ----
+## Linear ----
 lm_wkflow <- workflow() %>% 
   # add model
   add_model(linear_reg) %>% 
   # add receipe
   add_recipe(rec_reg)
 
-## KNNn model ----
+## KNN ----
 knn_wkflow <- workflow() %>% 
   # add model
   add_model(knn_mod) %>% 
   # add receipe
   add_recipe(rec_reg)
 
+## EN ----
+en_wkflow <- workflow() %>% 
+  # add model
+  add_model(en_mod) %>% 
+  # add receipe
+  add_recipe(rec_reg)
+
+## RF ----
+rf_wkflow <- workflow() %>% 
+  # add model
+  add_model(rf_mod) %>% 
+  # add receipe
+  add_recipe(rec_reg)
+
 ```
+
+
+## Tuning the Parameters
+
+```{r, eval=FALSE}
+# Grids for tunning parameters ----
+# For the Linear model there is no parameter to tune, so I don't need a grid or tuning.
+## KNN ----
+knn_grid <- grid_regular(neighbors(range = c(1,15)), 
+                         levels = 5)
+
+## EN ----
+en_grid <- grid_regular(penalty(range = c(-5, 5)), 
+                             mixture(range = c(0,1)), 
+                             levels = 10)
+
+## RF ----
+rf_grid <- grid_regular(mtry(range = c(1, 12)), 
+                                  trees(range = c(200,1000)), 
+                                  min_n(range = c(5,20)), 
+                                  levels = 8)
+
+# Tuning ----
+## KKN ----
+knn_tune <- tune_grid(
+  knn_wkflow,
+  resamples = notes_folds,
+  grid = knn_grid
+)
+
+## EN ----
+en_tune <- tune_grid(
+  en_wkflow,
+  resamples = notes_folds,
+  grid = en_grid
+)
+
+## RF ----
+rf_tune_res <- tune_grid(
+  rf_wkflow,
+  resamples = notes_folds,
+  grid = rf_grid
+)
+
+# Save tuning results ----
+
+## KNN ----
+write_rds(knn_tune, file = "data/tuned_models/knn.rds")
+
+## EN ----
+write_rds(elastic_tune, file = "data/tuned_models/elastic.rds")
+
+## RF ----
+write_rds(rf_tune_res, file = "data/tuned_models/rf.rds")
+
+```
+
+Finally, we save all the results from the tuning process. 
+For the present document, we used the data stored in this files instead of running all the analysis again when knitting the Rmd file.
+
+```{r, eval=FALSE}
+# Load tunning results ----
+## KNN ----
+read_rds(knn_tune, file = "data/tuned_models/knn.rds")
+
+## EN ----
+read_rds(elastic_tune, file = "data/tuned_models/elastic.rds")
+
+## RF ----
+read_rds(rf_tune_res, file = "data/tuned_models/rf.rds")
+```
+
 
 ## Model Fitting
 

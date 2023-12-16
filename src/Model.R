@@ -14,15 +14,21 @@ p_load(tidyverse,
        ggthemes,
        rsample,
        parsnip,
-       workflows
+       workflows,
+       glmnet,
+       ranger
        )
-
-load("data/notes_merged.RData")
 
 set.seed(1984)
 
-notes_merged <- slice_sample(notes_merged, prop = 0.1)
+# Load data ----
+load("data/notes_merged.RData")
 
+notes_merged <- notes_merged %>% filter(created_at > "2022-11-25 15:30:30 UTC") %>% 
+  slice_sample(prop = 0.05)
+
+  
+# Split data and cross validation ----
 training_percentage <- 0.75
 
 split_notes <- initial_split(notes_merged,
@@ -50,8 +56,7 @@ linear_reg <- linear_reg() %>%
   set_engine("lm")
 
 # KNN model
-k = 7
-knn_mod <- nearest_neighbor(neighbors = k) %>%
+knn_mod <- nearest_neighbor(neighbors = tune()) %>%
   set_mode("regression") %>%
   set_engine("kknn")
 
@@ -100,6 +105,7 @@ rf_wkflow <- workflow() %>%
   add_recipe(rec_reg)
 
 # Grids for tunning parameters ----
+# For the Linear model there is no parameter to tune, so I don't need a grid or tuning.
 ## KNN ----
 knn_grid <- grid_regular(neighbors(range = c(1,15)), 
                          levels = 5)
@@ -111,14 +117,14 @@ en_grid <- grid_regular(penalty(range = c(-5, 5)),
 
 ## RF ----
 rf_grid <- grid_regular(mtry(range = c(1, 12)), 
-                                  trees(range = c(200,1000)), 
+                                  trees(range = c(20,60)), 
                                   min_n(range = c(5,20)), 
                                   levels = 8)
 
-# Tunning ----
+# Tuning ----
 ## KKN ----
 knn_tune <- tune_grid(
-  knn_workflow,
+  knn_wkflow,
   resamples = notes_folds,
   grid = knn_grid
 )
@@ -130,32 +136,72 @@ en_tune <- tune_grid(
   grid = en_grid
 )
 
-## RANDOM FOREST
+## RF ----
 rf_tune_res <- tune_grid(
   rf_wkflow,
   resamples = notes_folds,
   grid = rf_grid
 )
 
-# Save tunning results ----
-# KNN ----
+# Save tuning results ----
+
+## KNN ----
 write_rds(knn_tune, file = "data/tuned_models/knn.rds")
 
-# EN ----
-write_rds(elastic_tune, file = "data/tuned_models/elastic.rds")
+## EN ----
+write_rds(en_tune, file = "data/tuned_models/elastic.rds")
 
-# RF ----
+## RF ----
 write_rds(rf_tune_res, file = "data/tuned_models/rf.rds")
 
 # Load tunning results ----
-# KNN ----
+## KNN ----
 read_rds(knn_tune, file = "data/tuned_models/knn.rds")
 
-# EN ----
+## EN ----
 read_rds(elastic_tune, file = "data/tuned_models/elastic.rds")
 
-# RF ----
+## RF ----
 read_rds(rf_tune_res, file = "data/tuned_models/rf.rds")
+
+# Compare models ----
+
+## Linear ----
+lm_fit <- fit_resamples(lm_workflow, resamples = pokemon_folds)
+lm_rmse <- collect_metrics(lm_fit) %>% 
+  slice(1)
+
+## KKN ----
+knn_rmse <- collect_metrics(knn_tuned) %>% 
+  arrange(mean) %>% 
+  slice(6)
+
+## EN ----
+elastic_rmse <- collect_metrics(elastic_tuned) %>% 
+  arrange(mean) %>% 
+  slice(73)
+
+## RF ----
+rf_rmse <- collect_metrics(rf_tuned) %>% 
+  arrange(mean) %>% 
+  slice(513)
+
+# Creating a tibble of all the models and their RMSE
+final_compare_tibble <- tibble(
+  Model = c("Linear Regression", 
+            "K Nearest Neighbors", 
+            "Elastic Net", 
+            "Random Forest"), 
+  RMSE = c(lm_rmse$mean, 
+           knn_rmse$mean, 
+           elastic_rmse$mean, 
+           rf_rmse$mean))
+
+# Arranging by lowest RMSE
+final_compare_tibble <- final_compare_tibble %>% 
+  arrange(RMSE)
+
+final_compare_tibble
 
 # fitting models ----
 ## Linear ----
