@@ -689,7 +689,7 @@ Les's say something about each one of the autoplots:
 
 - Elastic Net: The model is looking better for values slightly larger than 1 in the regularization amount, and from there the model starts performing really bad. It at this optimal point of the value of regularizartion that we observe that penalty values in the middle (0.333, and 0.444) perfom better.The penalty also has an effects for values less than 0.222, but for the other values the difference seems very small.
 
-- Polynomial Regression: It seem aparent that the model performs better with a higher degree. The laargest improvement is from 3th to 4th degree.
+- Polynomial Regression: It seem aparent that the model performs better with a higher degree. The largest improvement is from 3th to 4th degree.
 
 - Random Tree: It is clear that increasing the number of trees improves the RMSE for all minimal node sizes. Also the number of predictor improves the RMSE, but the gains are small for more than 7 predictors.
 
