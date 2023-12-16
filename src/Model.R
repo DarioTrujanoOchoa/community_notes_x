@@ -24,9 +24,13 @@ set.seed(1984)
 # Load data ----
 load("data/notes_merged.RData")
 
-notes_merged <- notes_merged %>% filter(created_at > "2022-11-25 15:30:30 UTC") %>% 
+# lets get a subset of the data
+
+notes_merged <- notes_merged %>% 
+  filter(created_at > "2022-11-25 15:30:30 UTC") %>% 
   slice_sample(prop = 0.05)
 
+summary(notes_merged)
   
 # Split data and cross validation ----
 training_percentage <- 0.75
@@ -46,13 +50,23 @@ rec_reg <- recipe(ratings ~  .,
   step_rm(note_id, tweet_id, 
           created_at, current_status) %>% 
   step_dummy(w_day, hour, classification) %>% 
-  step_normalize(agreement_rate) 
+  step_zv(all_predictors()) %>% 
+  step_normalize(all_numeric_predictors()) 
 
 
 # Models ----
 ##linear model ----
 linear_reg <- linear_reg() %>%
   set_mode("regression") %>%
+  set_engine("lm")
+
+# Polinomial Regression ----
+poly_rec <- rec_reg %>% 
+  step_poly(note_length, helpful_rate, not_helpful_rate,
+            degree = tune())
+
+poly_spec <- linear_reg() %>% 
+  set_mode("regression") %>% 
   set_engine("lm")
 
 # KNN model
@@ -83,6 +97,11 @@ lm_wkflow <- workflow() %>%
   # add receipe
   add_recipe(rec_reg)
 
+## POLYNOMIAL REGRESSION ----
+poly_wf <- workflow() %>% 
+  add_model(poly_spec) %>% 
+  add_recipe(poly_rec)
+
 ## KNN ----
 knn_wkflow <- workflow() %>% 
   # add model
@@ -106,6 +125,10 @@ rf_wkflow <- workflow() %>%
 
 # Grids for tunning parameters ----
 # For the Linear model there is no parameter to tune, so I don't need a grid or tuning.
+
+## POLYNOMIAL REGRESSION ----
+degree_grid <- grid_regular(degree(range = c(1,5)), levels = 5)
+
 ## KNN ----
 knn_grid <- grid_regular(neighbors(range = c(1,15)), 
                          levels = 5)
@@ -122,6 +145,14 @@ rf_grid <- grid_regular(mtry(range = c(1, 12)),
                                   levels = 8)
 
 # Tuning ----
+
+## POLYNOMIAL REGRESSION ----
+poly_tuned <- tune_grid(
+  poly_wf,
+  resamples = notes_folds,
+  grid = degree_grid
+)
+
 ## KKN ----
 knn_tune <- tune_grid(
   knn_wkflow,
@@ -145,6 +176,9 @@ rf_tune_res <- tune_grid(
 
 # Save tuning results ----
 
+## Polynomial Regression ----
+write_rds(poly_tuned, file = "data/tuned_models/poly.rds")
+
 ## KNN ----
 write_rds(knn_tune, file = "data/tuned_models/knn.rds")
 
@@ -154,7 +188,11 @@ write_rds(en_tune, file = "data/tuned_models/elastic.rds")
 ## RF ----
 write_rds(rf_tune_res, file = "data/tuned_models/rf.rds")
 
-# Load tunning results ----
+# Load tuning results ----
+
+## Polynomial Regression ----
+read_rds(poly_tuned, file = "data/tuned_models/poly.rds")
+
 ## KNN ----
 read_rds(knn_tune, file = "data/tuned_models/knn.rds")
 
@@ -165,21 +203,24 @@ read_rds(elastic_tune, file = "data/tuned_models/elastic.rds")
 read_rds(rf_tune_res, file = "data/tuned_models/rf.rds")
 
 # Compare models ----
-
+# collect metrics 
 ## Linear ----
-lm_fit <- fit_resamples(lm_workflow, resamples = pokemon_folds)
+lm_fit <- fit_resamples(lm_wkflow, resamples = notes_folds)
 lm_rmse <- collect_metrics(lm_fit) %>% 
   slice(1)
 
-## KKN ----
-knn_rmse <- collect_metrics(knn_tuned) %>% 
+# # POLYNOMIAL REGRESSION ----
+poly_rmse <- collect_metrics(poly_tuned) %>% 
   arrange(mean) %>% 
   slice(6)
 
+## KKN ----
+knn_rmse <- show_best(knn_tune,metric = "rmse",n = 1) %>% 
+  select(mean) %>% pull()
+
 ## EN ----
-elastic_rmse <- collect_metrics(elastic_tuned) %>% 
-  arrange(mean) %>% 
-  slice(73)
+elastic_rmse <- show_best(en_tune,metric = "rmse",n = 1) %>% 
+  select(mean) %>% pull()
 
 ## RF ----
 rf_rmse <- collect_metrics(rf_tuned) %>% 
@@ -188,14 +229,20 @@ rf_rmse <- collect_metrics(rf_tuned) %>%
 
 # Creating a tibble of all the models and their RMSE
 final_compare_tibble <- tibble(
-  Model = c("Linear Regression", 
-            "K Nearest Neighbors", 
-            "Elastic Net", 
-            "Random Forest"), 
-  RMSE = c(lm_rmse$mean, 
-           knn_rmse$mean, 
-           elastic_rmse$mean, 
-           rf_rmse$mean))
+  Model = c(
+    "Linear Regression", 
+    "K Nearest Neighbors",
+    "Elastic Net",
+    # "Random Forest",
+    "Polynomial Regression"
+    ), 
+  RMSE = c(
+   lm_rmse$mean, 
+   knn_rmse,
+   elastic_rmse,
+   # rf_rmse$mean,
+   poly_rmse$mean
+    ))
 
 # Arranging by lowest RMSE
 final_compare_tibble <- final_compare_tibble %>% 
@@ -203,46 +250,35 @@ final_compare_tibble <- final_compare_tibble %>%
 
 final_compare_tibble
 
-# fitting models ----
-## Linear ----
-fit_lm <- 
-  lm_wkflow %>% 
-  fit(data = train_notes)
-fit_lm
+# Best model ----
+show_best(poly_tuned, metric = 'rmse')
+best_train <- select_best(poly_tuned, metric = 'rmse')
 
-## KNN ----
-fit_knn <- 
-  knn_wkflow %>% 
-  fit(data = train_notes)
-fit_knn
+## Fit to training data ----
+final_workflow_train <- finalize_workflow(poly_wf, best_train)
+final_fit_train <- fit(final_workflow, data = notes_train)
 
-## EN ----
-fit_en <- 
-  en_wkflow %>% 
-  fit(data = train_notes)
-fit_knn
+# Save
+write_rds(rf_final_fit_train, file = "data/tuned_models/final_train.rds")
 
-## RF ----
-fit_knn <- 
-  rf_wkflow %>% 
-  fit(data = train_notes)
-fit_knn
+## Testing the model ----
+# Loading in the training data fit
+final_fit_train <- read_rds(file = "data/tuned_models/final_train.rds")
 
+# Creating the predicted vs. actual value tibble
+notes_tibble <- predict(final_fit_train, new_data = test_notes %>% select(-ratings))
+notes_tibble <- bind_cols(notes_tibble, test_notes %>% select(ratings))
 
-# metrics
-notes_metrics <- metric_set(rmse, rsq, mae)
+# Creating plot of predicted values vs. actual values
+notes_tibble %>% 
+  ggplot(aes(x = .pred, y = ratings)) +
+  geom_point(alpha = 0.4) +
+  geom_abline(lty = 2) +
+  theme_grey() +
+  coord_obs_pred() +
+  labs(title = "Predicted Values vs. Actual Values")
 
-# linear model
-notes_lm_aug <- augment(fit_lm, test_notes)
-notes_metrics(notes_lm_aug, truth = ratings,
-                estimate = .pred)
-
-notes_merged %>% ggplot() +
-  geom_point(aes(x=agreement_rate,y=ratings))
-
-# knn model
-notes_knn_aug <- augment(fit_knn, test_notes)
-notes_metrics(notes_knn_aug, truth = ratings,
-              estimate = .pred)
-
-
+# Using the training fit to create the VIP because the model was not actually fit to the testing data
+final_fit_train %>% 
+  extract_fit_engine() %>% 
+  vip(aesthetics = list(fill = "red3", color = "blue3"))
