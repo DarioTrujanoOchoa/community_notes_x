@@ -203,6 +203,11 @@ en_tune <- read_rds(file = "data/tuned_models/elastic.rds")
 ## RF ----
 rf_tune <- read_rds(file = "data/tuned_models/rf.rds")
 
+# Autoplots ----
+autoplot(en_tune, metric = 'rmse')
+autoplot(poly_tune, metric = 'rmse')
+autoplot(rf_tune, metric = 'rmse')
+
 # Compare models ----
 # collect metrics 
 ## Linear ----
