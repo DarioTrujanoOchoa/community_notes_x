@@ -21,13 +21,23 @@ notes <- read_tsv("data/notes-00000.tsv") %>% clean_names()
 status <- read_tsv("data/noteStatusHistory-00000.tsv") %>% clean_names()
 
 ## ratings
-r0 <- read_tsv("data/ratings-00000.tsv") %>% clean_names()
-r1 <- read_tsv("data/ratings-00001.tsv") %>% clean_names()
-r2 <- read_tsv("data/ratings-00002.tsv") %>% clean_names()
-r3 <- read_tsv("data/ratings-00003.tsv") %>% clean_names()
+r1 <- read_tsv("data/ratings-00000 (1).tsv") %>% clean_names()
+r2 <- read_tsv("data/ratings-00007 (2).tsv") %>% clean_names()
+r3 <- read_tsv("data/ratings-00013 (3).tsv") %>% clean_names()
+r4 <- read_tsv("data/ratings-00012 (4).tsv") %>% clean_names()
+r5 <- read_tsv("data/ratings-00009 (5).tsv") %>% clean_names()
+r6 <- read_tsv("data/ratings-00001 (6).tsv") %>% clean_names()
+r7 <- read_tsv("data/ratings-00014 (7).tsv") %>% clean_names()
+r8 <- read_tsv("data/ratings-00002 (8).tsv") %>% clean_names()
+r9 <- read_tsv("data/ratings-00015 (9).tsv") %>% clean_names()
+r10 <- read_tsv("data/ratings-00004 (10).tsv") %>% clean_names()
+r11 <- read_tsv("data/ratings-00003 (11).tsv") %>% clean_names()
+r12 <- read_tsv("data/ratings-00005 (12).tsv") %>% clean_names()
+r13 <- read_tsv("data/ratings-00010 (13).tsv") %>% clean_names()
+r14 <- read_tsv("data/ratings-00006 (14).tsv") %>% clean_names()
+r15 <- read_tsv("data/ratings-00011 (15).tsv") %>% clean_names()
 
 # Almost all the notes in notes are in status
-# only 20 notes are not there
 sum(notes$note_id %in% status$note_id)
 
 s_notes <- slice_sample(notes,n = 10000) 
@@ -128,7 +138,7 @@ table(status$current_status, status$locked_status)
 
 # there are 109,142 raters. Small for the number of notes.
 # they cover 
-length(unique(r0$rater_participant_id))
+length(unique(r1$rater_participant_id))
 
 # only 13 people in r3 were in r1
 # 42 people in r1 were in r3
@@ -136,39 +146,36 @@ length(unique(r0$rater_participant_id))
 sum(r1$rater_participant_id %in% 
        r3$rater_participant_id)
 
-barplot(table(table(r0$rater_participant_id)),
+barplot(table(table(r1$rater_participant_id)),
         xlab = "Number of Ratings",
         ylab = "Number of Raters",
         main = "Distribution of Ratings Published by Rater")
 
 ## ratings in notes ----
 # most of the notes are in the ratings dataset
-sum(r0$note_id %in% notes$note_id)
 sum(r1$note_id %in% notes$note_id)
 sum(r2$note_id %in% notes$note_id)
 sum(r3$note_id %in% notes$note_id)
+sum(r4$note_id %in% notes$note_id)
 
-mean(notes$note_id %in% r0$note_id)
 mean(notes$note_id %in% r1$note_id)
 mean(notes$note_id %in% r2$note_id)
 mean(notes$note_id %in% r3$note_id)
+mean(notes$note_id %in% r4$note_id)
 
 mean(r3$note_id %in% r1$note_id)
 
 # Most notes have few ratings
-barplot(table(table(r0$note_id)),
+barplot(table(table(r1$note_id)),
         xlab = "Number of Ratings",
         ylab = "Number of Notes",
         main = "Distribution of Ratings Published by Note")
 
-table(r0$helpfulness_level)
+table(r1$helpfulness_level)
 
 ## select variables from ratings at the notes level ----
 rates_summarise <-
-bind_rows(r0, 
-          r1,
-          r2, 
-          r3) %>% 
+bind_rows(r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15) %>% 
   group_by(note_id) %>% 
   summarise(
             ratings = n(),

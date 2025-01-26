@@ -15,7 +15,7 @@ load("data/notes_merged.RData")
 missing_cell <- which(is.na(notes_merged), arr.ind = TRUE)
 notes_merged[missing_cell[,1],]
 # These are the tweet ids
-notes_merged[missing_cell[,1],] %>% select(tweet_id) %>% pull() %>% format(scientific = F) %>% unique()
+tweet_ids <- notes_merged[missing_cell[,1],] %>% select(tweet_id) %>% pull() %>% format(scientific = F) %>% unique()
 # There is no summary in this notes, probably this was a mistake
 # There is nothing in the note 1370110240532930560 that had 8 ratings. The other two notes were never rated.
 
