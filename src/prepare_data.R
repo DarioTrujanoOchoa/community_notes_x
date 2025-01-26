@@ -15,27 +15,27 @@ rm(list = ls())
 # load data ----
 # all the data was downloaded on December 3rd 2023
 # notes
-notes <- read_tsv("data/notes-00000.tsv") %>% clean_names()
+notes <- read_tsv("data/raw_data/notes-00000.tsv") %>% clean_names()
 
 ## status
-status <- read_tsv("data/noteStatusHistory-00000.tsv") %>% clean_names()
+status <- read_tsv("data/raw_data/noteStatusHistory-00000.tsv") %>% clean_names()
 
 ## ratings
-r1 <- read_tsv("data/ratings-00000 (1).tsv") %>% clean_names()
-r2 <- read_tsv("data/ratings-00007 (2).tsv") %>% clean_names()
-r3 <- read_tsv("data/ratings-00013 (3).tsv") %>% clean_names()
-r4 <- read_tsv("data/ratings-00012 (4).tsv") %>% clean_names()
-r5 <- read_tsv("data/ratings-00009 (5).tsv") %>% clean_names()
-r6 <- read_tsv("data/ratings-00001 (6).tsv") %>% clean_names()
-r7 <- read_tsv("data/ratings-00014 (7).tsv") %>% clean_names()
-r8 <- read_tsv("data/ratings-00002 (8).tsv") %>% clean_names()
-r9 <- read_tsv("data/ratings-00015 (9).tsv") %>% clean_names()
-r10 <- read_tsv("data/ratings-00004 (10).tsv") %>% clean_names()
-r11 <- read_tsv("data/ratings-00003 (11).tsv") %>% clean_names()
-r12 <- read_tsv("data/ratings-00005 (12).tsv") %>% clean_names()
-r13 <- read_tsv("data/ratings-00010 (13).tsv") %>% clean_names()
-r14 <- read_tsv("data/ratings-00006 (14).tsv") %>% clean_names()
-r15 <- read_tsv("data/ratings-00011 (15).tsv") %>% clean_names()
+r1 <- read_tsv("data/raw_data/ratings-00000 (1).tsv") %>% clean_names()
+r2 <- read_tsv("data/raw_data/ratings-00007 (2).tsv") %>% clean_names()
+r3 <- read_tsv("data/raw_data/ratings-00013 (3).tsv") %>% clean_names()
+r4 <- read_tsv("data/raw_data/ratings-00012 (4).tsv") %>% clean_names()
+r5 <- read_tsv("data/raw_data/ratings-00009 (5).tsv") %>% clean_names()
+r6 <- read_tsv("data/raw_data/ratings-00001 (6).tsv") %>% clean_names()
+r7 <- read_tsv("data/raw_data/ratings-00014 (7).tsv") %>% clean_names()
+r8 <- read_tsv("data/raw_data/ratings-00002 (8).tsv") %>% clean_names()
+r9 <- read_tsv("data/raw_data/ratings-00015 (9).tsv") %>% clean_names()
+r10 <- read_tsv("data/raw_data/ratings-00004 (10).tsv") %>% clean_names()
+r11 <- read_tsv("data/raw_data/ratings-00003 (11).tsv") %>% clean_names()
+r12 <- read_tsv("data/raw_data/ratings-00005 (12).tsv") %>% clean_names()
+r13 <- read_tsv("data/raw_data/ratings-00010 (13).tsv") %>% clean_names()
+r14 <- read_tsv("data/raw_data/ratings-00006 (14).tsv") %>% clean_names()
+r15 <- read_tsv("data/raw_data/ratings-00011 (15).tsv") %>% clean_names()
 
 # Almost all the notes in notes are in status
 sum(notes$note_id %in% status$note_id)
