@@ -103,10 +103,14 @@ notes_merged %>%
 # Grab 100 ids to use in python
 
 # Ggplot visualisations
-id_snippet <- notes_merged %>% select(tweet_id) %>% head(100)
+id_snippet <- notes_merged %>% filter(current_status == "NEEDS_MORE_RATINGS")
+id_snippet <- id_snippet %>% filter(ratings > 10)
+id_snippet <- id_snippet %>% select(tweet_id)
+id_snippet <- id_snippet %>% format(scientific = F)
+id_snippet <- id_snippet %>% unique()
 View(id_snippet)
 snippet_list <- paste0("[", paste(id_snippet$tweet_id, collapse = ","), "]")
-#write(snippet_list, file = "tweet_ids.txt")
+write(snippet_list, file = "tweet_ids.txt")
 
 ### Far more misleading ----
 ggplot(notes_merged, aes(x = classification)) +
@@ -130,7 +134,7 @@ ggplot(notes_merged, aes(x = classification, fill = factor(trustworthy_sources))
   labs(title = "Classification by Trustworthy Sources",
        fill = "Trustworthy Sources")
 
-sampled_data <- notes_merged[sample(nrow(notes_merged), 10000), ]
+sampled_data <- notes_merged[sample(nrow(notes_merged), 100000), ]
 
 # Mega correlation plot
 library(GGally)
@@ -150,7 +154,7 @@ ggplot(notes_merged, aes(x = ratings, fill = current_status)) +
   labs(title = "Ratings Distribution by Note Status, blue goes up to 50k when near 0 ratings")
 
 ### Helpfulness status as a measure of publishability? ----
-ggplot(notes_merged, aes(x = not_helpful_rate, fill = current_status)) +
+ggplot(notes_merged, aes(x = helpful_rate, fill = current_status)) +
   geom_histogram(position = "dodge", binwidth = 0.05) +
   labs(title = "Disagreement Rate by Status")
 # =^
@@ -163,7 +167,85 @@ ggplot(sampled_data, aes(x = helpful_rate, y = ratings, color = current_status))
   geom_point() +
   labs(title = "Helpfulness vs Ratings by Status")
 
+sampled_data %>% ggplot(aes(x=agreement_rate,y=helpful_rate)) +
+  geom_point()
 
+filter(sampled_data, ratings>10) %>% ggplot(aes(x=current_status, y = ratings))+
+  geom_boxplot()+
+  ylim(0,100)
+  
+#needs more ratings outliers
+# sample with specific ratings classification
+notes_merged <- notes_merged %>% filter(!is.na(helpful_unbiased_language))
+notes_merged <- notes_merged %>% filter(!is.na(current_status))
+# Notes over time 
+notes_merged %>% ggplot(aes(x = created_at, fill = current_status))+
+  geom_histogram(binwidth = 86400)+
+  theme_minimal()+
+  labs(title = "Note Status Over Time", x = "Date", y = "Count")
+
+#Reasons for not helpful
+notes_merged %>%
+  summarise(across(starts_with("not_helpful_"), sum, na.rm = TRUE)) %>%
+  pivot_longer(everything(), names_to = "Reason", values_to = "Count") %>%
+  ggplot(aes(x = reorder(Reason, Count), y = Count))+
+  geom_bar(stat = "identity", fill = "red")+
+  coord_flip()+
+  labs(title = "Reasons for Unhelpful Notes", x = "Reason", y = "Count")
+
+#Reasons for helpful
+notes_merged %>%
+  summarise(across(starts_with("helpful_"), sum, na.rm = TRUE)) %>%
+  pivot_longer(everything(), names_to = "Reason", values_to = "Count") %>%
+  ggplot(aes(x = reorder(Reason, Count), y = Count))+
+  geom_bar(stat = "identity", fill = "green")+
+  coord_flip()+
+  labs(title = "Reasons for Unhelpful Notes", x = "Reason", y = "Count")
+
+# Not helpful reasons grouped by status
+notes_merged %>%
+  group_by(current_status) %>%
+  summarise(across(starts_with("not_helpful_"), mean, na.rm = TRUE)) %>%
+  pivot_longer(-current_status, names_to = "Reason", values_to = "Rate") %>%
+  ggplot(aes(x = Reason, y = Rate, fill = current_status))+
+  geom_bar(stat = "identity", position = "dodge")+
+  coord_flip()+
+  labs(title = "Not Helpful Reasons grouped by Note Status", x = "Reason", y = "Rate")
+
+# helpful reasons grouped by status
+notes_merged %>%
+  group_by(current_status) %>%
+  summarise(across(starts_with("helpful_"), mean, na.rm = TRUE)) %>%
+  pivot_longer(-current_status, names_to = "Reason", values_to = "Rate") %>%
+  ggplot(aes(x = Reason, y = Rate, fill = current_status))+
+  geom_bar(stat = "identity", position = "dodge")+
+  coord_flip()+
+  labs(title = "Not Helpful Reasons grouped by Note Status", x = "Reason", y = "Rate")
+
+# Note length
+notes_merged %>% ggplot(aes(x = note_length, fill = current_status))+
+  geom_density(alpha = 0.5)+
+  labs(title = "Note length distribution grouped by status", x = "Note Length", y = "Density")
+
+# Correlation between new smaller variables
+library(GGally)
+sampled_data <- notes_merged[sample(nrow(notes_merged), 10000), ]
+sampled_data %>% select(starts_with("not_helpful_")) %>% ggpairs()
+
+# LM's
+library(nnet)
+
+lmodel <- multinom(current_status~helpful_rate+not_helpful_rate+ 
+                             helpful_other+helpful_informative+helpful_clear+ 
+                             not_helpful_off_topic+not_helpful_incorrect, notes_merged)
+
+summary(lmodel)
+
+lm(current_status~helpful_rate+not_helpful_rate+ 
+                     helpful_other+helpful_informative+helpful_clear+ 
+                     not_helpful_off_topic+not_helpful_incorrect, notes_merged)
+
+summary(lmodel2)
 #Summary:
 # How many ratings needed to publish a note: 
 #unknown, we need to get information on notes actually 

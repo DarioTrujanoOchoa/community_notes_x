@@ -92,15 +92,7 @@ table(s_notes$classification,s_notes$trustworthy_sources)
 
 ## Select the variables that will be used in the model from the notes dataset ----
 notes_final <-
-  notes %>% select(
-    note_id,
-    tweet_id,
-    classification,
-     trustworthy_sources,
-     summary, 
-    is_media_note,
-    created_at_millis
-     ) %>% 
+  notes %>% select(-c(note_author_participant_id, is_media_note)) %>% 
   mutate(created_at = as.POSIXct(created_at_millis / 1000, origin = "1970-01-01")) %>% 
   mutate(w_day = wday(created_at, label = T),
          hour = as_factor(hour(created_at)),
@@ -174,16 +166,35 @@ barplot(table(table(r1$note_id)),
 table(r1$helpfulness_level)
 
 ## select variables from ratings at the notes level ----
+# select small slice to reduce wait time
+small15 <- r15 %>% slice(1:100000)
+
 rates_summarise <-
-bind_rows(r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15) %>% 
+bind_rows(small15) %>% 
   group_by(note_id) %>% 
   summarise(
             ratings = n(),
             agreement_rate = sum(agree)/n(),
             helpful_rate = sum(helpfulness_level =="HELPFUL",na.rm = T)/n(),
             not_helpful_rate = sum(helpfulness_level =="NOT_HELPFUL",na.rm = T)/n(),
-            somewhat_helpful_rate = sum(helpfulness_level =="SOMEWHAT_HELPFUL",na.rm = T)/n()
-            )
+            somewhat_helpful_rate = sum(helpfulness_level =="SOMEWHAT_HELPFUL",na.rm = T)/n(),
+            across(c(helpful_other, helpful_informative, helpful_clear, 
+                     helpful_empathetic, helpful_good_sources, 
+                     helpful_unique_context, helpful_addresses_claim, 
+                     helpful_important_context, helpful_unbiased_language, 
+                     not_helpful_other, not_helpful_incorrect, 
+                     not_helpful_sources_missing_or_unreliable, 
+                     not_helpful_opinion_speculation_or_bias, 
+                     not_helpful_missing_key_points, not_helpful_outdated, 
+                     not_helpful_hard_to_understand, 
+                     not_helpful_argumentative_or_biased, 
+                     not_helpful_off_topic, 
+                     not_helpful_spam_harassment_or_abuse, 
+                     not_helpful_irrelevant_sources, 
+                     not_helpful_opinion_speculation, 
+                     not_helpful_note_not_needed),
+                   ~ sum(.x, na.rm = TRUE) / n()))
+
 
 rates_summarise
 # There is no missing values
