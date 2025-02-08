@@ -179,8 +179,11 @@ filter(sampled_data, ratings>10) %>% ggplot(aes(x=current_status, y = ratings))+
 notes_merged <- notes_merged %>% filter(!is.na(helpful_unbiased_language))
 notes_merged <- notes_merged %>% filter(!is.na(current_status))
 # Notes over time 
-notes_merged %>% ggplot(aes(x = created_at, fill = current_status))+
-  geom_histogram(binwidth = 86400)+
+notes_merged %>%
+  mutate(created_at = lubridate::as_date(notes_merged$created_at)) %>% 
+  filter(year(created_at) >= 2024) %>% 
+  ggplot(aes(x = created_at, fill = current_status))+
+  geom_histogram(binwidth = 1)+
   theme_minimal()+
   labs(title = "Note Status Over Time", x = "Date", y = "Count")
 
@@ -225,6 +228,7 @@ notes_merged %>%
 # Note length
 notes_merged %>% ggplot(aes(x = note_length, fill = current_status))+
   geom_density(alpha = 0.5)+
+  xlim(0,1000)+
   labs(title = "Note length distribution grouped by status", x = "Note Length", y = "Density")
 
 # Correlation between new smaller variables
@@ -245,7 +249,37 @@ lm(current_status~helpful_rate+not_helpful_rate+
                      helpful_other+helpful_informative+helpful_clear+ 
                      not_helpful_off_topic+not_helpful_incorrect, notes_merged)
 
-summary(lmodel2)
+#Look at currently scraped tweets
+scraped <- read.csv("data/tweets_data1.csv")
+scraped <- scraped %>% filter(Text != "DivN/A")
+scraped <- scraped %>% rename(tweet_id = Tweet.ID.)
+scraped$tweet_id. <- as.numeric(scraped$tweet_id)
+notes_merged$tweet_id <- as.numeric(notes_merged$tweet_id)
+merged_data <- merge(scraped, notes_merged, by = "tweet_id", all.x = TRUE)
+merged_data <- merged_data %>% filter(!is.na(helpful_clear))
+
+# Graphs for merged data
+# NOTES MAKE LIKES GO DOWN
+ggplot(merged_data, aes(x = Note.Published., y = as.numeric(gsub("K", "e3", Likes))))+
+  geom_boxplot(fill="gray")+
+  ggtitle("Likes Distribution by Note Published Status")+
+  xlab("Note Published")+
+  ylab("Likes")+
+  theme_minimal()
+
+# NOTHING CURRENTLY RATED HELPFUL NOT PUBLISHED AND VICE VERSA
+ggplot(merged_data, aes(x = current_status, y = as.numeric(gsub("K", "e3", Likes))))+
+  geom_boxplot(fill="gray")+
+  ggtitle("Likes Distribution by Note Published Status")+
+  xlab("Note Published")+
+  ylab("Likes")+
+  facet_wrap(~Note.Published.)+
+  coord_flip()
+
+
+# distribution of note publish times if ever published (16 hours)
+
+
 #Summary:
 # How many ratings needed to publish a note: 
 #unknown, we need to get information on notes actually 

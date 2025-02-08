@@ -227,3 +227,22 @@ notes_merged
 
 save(notes_merged,file = "data/notes_merged.RData")
 
+
+time_status <- status %>% 
+  filter(!is.na(first_non_nmr_status)) %>%
+  mutate(created_at = as.POSIXct(created_at_millis / 1000, origin = "1970-01-01"), 
+          time_cs = as.POSIXct(timestamp_millis_of_first_non_nmr_status / 1000, origin = "1970-01-01")) %>% 
+  mutate(latency = (time_cs - created_at)) %>% 
+  select(note_id, created_at, time_cs, latency, current_status)
+
+time_status_2025 <- time_status %>% 
+  filter(year(created_at) == 2025)
+
+notes_merged_2025 <- left_join(notes_merged, time_status_2025, by = join_by(note_id))
+notes_merged_2025 <- notes_merged_2025 %>% filter(!is.na(latency))
+
+notes_merged_2025_tweets <- notes_merged_2025 %>% select(tweet_id) %>% unique()
+notes_merged_2025_tweets$tweet_id <- format(notes_merged_2025_tweets$tweet_id, scientific = FALSE)
+
+snippet_list <- paste0("[", paste(notes_merged_2025_tweets$tweet_id, collapse = ","), "]")
+write(snippet_list, file = "tweet_ids.txt")
