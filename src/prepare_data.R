@@ -228,6 +228,9 @@ notes_merged
 save(notes_merged,file = "data/notes_merged.RData")
 
 
+
+
+# Tweet ID extraction - Nate
 time_status <- status %>% 
   filter(!is.na(first_non_nmr_status)) %>%
   mutate(created_at = as.POSIXct(created_at_millis / 1000, origin = "1970-01-01"), 
@@ -236,7 +239,7 @@ time_status <- status %>%
   select(note_id, created_at, time_cs, latency, current_status)
 
 time_status_2025 <- time_status %>% 
-  filter(year(created_at) == 2025)
+  filter(year(created_at) == 2024, month(created_at)<9, month(created_at)>7)
 
 notes_merged_2025 <- left_join(notes_merged, time_status_2025, by = join_by(note_id))
 notes_merged_2025 <- notes_merged_2025 %>% filter(!is.na(latency))
@@ -246,3 +249,20 @@ notes_merged_2025_tweets$tweet_id <- format(notes_merged_2025_tweets$tweet_id, s
 
 snippet_list <- paste0("[", paste(notes_merged_2025_tweets$tweet_id, collapse = ","), "]")
 write(snippet_list, file = "tweet_ids.txt")
+
+
+# Extract Scraped Tweets and format data
+tweets <- rbind(read.csv("data/tweets_data_new.csv"),read.csv("data/tweets_data1.csv"))
+tweets <- tweets %>% rename(tweet_id = Tweet.ID.)
+tweets$tweet_id <- format(tweets$tweet_id, scientific = FALSE) %>% as.numeric(tweets$tweet_id)
+tweets$note_id <- format(tweets$note_id, scientific = FALSE) %>% as.numeric(tweets$note_id)
+notes_merged$tweet_id. <- format(notes_merged$tweet_id, scientific = FALSE)
+tweets <- left_join(tweets, notes_merged, by= "tweet_id")
+tweets <- tweets %>% filter(Text != "DivN/A", Likes != "divN/A")
+
+latency <- time_status %>% select(note_id,latency) %>% filter(note_id %in% tweets$note_id)
+tweets <- left_join(tweets,latency,by = "note_id")
+tweets <- tweets %>% select(-tweet_id)
+
+save(tweets,file = "data/tweets.RData")
+

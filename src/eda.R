@@ -10,6 +10,7 @@ p_load(tidyverse,
 rm(list=ls())
 
 load("data/notes_merged.RData")
+load("data/tweets.RData")
 
 # missing data ----
 # there are 3 rows with missing values
@@ -100,17 +101,7 @@ notes_merged %>%
   View()
 # Not all notes that have enough ratings are actually published
 
-# Grab 100 ids to use in python
-
 # Ggplot visualisations
-id_snippet <- notes_merged %>% filter(current_status == "NEEDS_MORE_RATINGS")
-id_snippet <- id_snippet %>% filter(ratings > 10)
-id_snippet <- id_snippet %>% select(tweet_id)
-id_snippet <- id_snippet %>% format(scientific = F)
-id_snippet <- id_snippet %>% unique()
-View(id_snippet)
-snippet_list <- paste0("[", paste(id_snippet$tweet_id, collapse = ","), "]")
-write(snippet_list, file = "tweet_ids.txt")
 
 ### Far more misleading ----
 ggplot(notes_merged, aes(x = classification)) +
@@ -178,14 +169,6 @@ filter(sampled_data, ratings>10) %>% ggplot(aes(x=current_status, y = ratings))+
 # sample with specific ratings classification
 notes_merged <- notes_merged %>% filter(!is.na(helpful_unbiased_language))
 notes_merged <- notes_merged %>% filter(!is.na(current_status))
-# Notes over time 
-notes_merged %>%
-  mutate(created_at = lubridate::as_date(notes_merged$created_at)) %>% 
-  filter(year(created_at) >= 2024) %>% 
-  ggplot(aes(x = created_at, fill = current_status))+
-  geom_histogram(binwidth = 1)+
-  theme_minimal()+
-  labs(title = "Note Status Over Time", x = "Date", y = "Count")
 
 #Reasons for not helpful
 notes_merged %>%
@@ -249,35 +232,77 @@ lm(current_status~helpful_rate+not_helpful_rate+
                      helpful_other+helpful_informative+helpful_clear+ 
                      not_helpful_off_topic+not_helpful_incorrect, notes_merged)
 
-#Look at currently scraped tweets
-scraped <- read.csv("data/tweets_data1.csv")
-scraped <- scraped %>% filter(Text != "DivN/A")
-scraped <- scraped %>% rename(tweet_id = Tweet.ID.)
-scraped$tweet_id. <- as.numeric(scraped$tweet_id)
-notes_merged$tweet_id <- as.numeric(notes_merged$tweet_id)
-merged_data <- merge(scraped, notes_merged, by = "tweet_id", all.x = TRUE)
-merged_data <- merged_data %>% filter(!is.na(helpful_clear))
+#Look at currently scraped tweets ----
 
 # Graphs for merged data
-# NOTES MAKE LIKES GO DOWN
-ggplot(merged_data, aes(x = Note.Published., y = as.numeric(gsub("K", "e3", Likes))))+
-  geom_boxplot(fill="gray")+
+# NOTES MAKE LESS LIKES
+ggplot(tweets, aes(x = Note.Published., y = as.numeric(gsub("K", "e3", Likes))))+
+  geom_boxplot()+
   ggtitle("Likes Distribution by Note Published Status")+
-  xlab("Note Published")+
-  ylab("Likes")+
+  labs(x ="Note Published", y = "Likes")+
   theme_minimal()
 
 # NOTHING CURRENTLY RATED HELPFUL NOT PUBLISHED AND VICE VERSA
-ggplot(merged_data, aes(x = current_status, y = as.numeric(gsub("K", "e3", Likes))))+
-  geom_boxplot(fill="gray")+
+ggplot(tweets, aes(x = current_status, y = as.numeric(gsub("K", "e3", Likes))))+
+  geom_boxplot()+
   ggtitle("Likes Distribution by Note Published Status")+
-  xlab("Note Published")+
-  ylab("Likes")+
+  labs(x ="Note Published", y = "Likes")+
   facet_wrap(~Note.Published.)+
   coord_flip()
 
 
 # distribution of note publish times if ever published (16 hours)
+status <- read_tsv("data/raw_data/noteStatusHistory-00000.tsv") %>% clean_names()
+time_status <- status %>% 
+  filter(!is.na(first_non_nmr_status)) %>%
+  mutate(created_at = as.POSIXct(created_at_millis / 1000, origin = "1970-01-01"), 
+         time_cs = as.POSIXct(timestamp_millis_of_first_non_nmr_status / 1000, origin = "1970-01-01")) %>% 
+  mutate(latency = (time_cs - created_at)) %>% 
+  select(note_id, created_at, time_cs, latency, current_status)
+
+mean(time_status$latency) #46 hours
+
+time_status %>% filter(year(created_at) == 2025, month(created_at)>0) %>% 
+  summarise(mean(latency)) #16 hours
+
+# Distribution of notes over time
+# looking at just the massive drop
+notes_merged %>%
+  mutate(created_at = lubridate::as_date(notes_merged$created_at)) %>% 
+  filter(year(created_at) >= 2024, month(created_at)>=11) %>% 
+  ggplot(aes(x = created_at, fill = current_status))+
+  geom_histogram(binwidth = 1)+
+  labs(title = "Note Status Over Time", x = "Date", y = "Count")
+
+tweets %>% ggplot(aes(x=latency))+
+  geom_histogram(binwidth = 60)+
+  xlim(0,1200)+
+  facet_wrap(~Note.Published.)+
+  labs(title = "Latency (first status change) for scraped tweets by note visible")
+
+# Less time when actually visible
+tweets %>% filter(!is.na(latency)) %>% group_by(Note.Published.) %>% summarise(mean(latency,))
+
+# Distribution of current status by note visible or not
+tweets %>% ggplot(aes(x=current_status))+
+  geom_bar()+
+  facet_wrap(~Note.Published.)+
+  coord_flip()+
+  labs(title = "Number of current status grouped by note visible")
+
+# Notes published by day
+notes_merged %>% ggplot(aes(x=w_day))+
+  geom_bar()+
+  labs(title = "Number of notes published by day")
+
+# Latency by current status
+notes_merged_latency <- left_join(notes_merged,time_status, by= "note_id")
+notes_merged_latency <- notes_merged_latency %>% filter(!is.na(latency)) %>% mutate(latency = as.numeric(latency))
+notes_merged_latency %>% ggplot(aes(x=latency))+
+  geom_histogram()+
+  facet_wrap(~current_status.x)+
+  xlim(0,2000)
+
 
 
 #Summary:
