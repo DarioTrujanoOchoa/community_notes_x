@@ -295,13 +295,61 @@ notes_merged %>% ggplot(aes(x=w_day))+
   geom_bar()+
   labs(title = "Number of notes published by day")
 
+# Heatmap
+notes_merged %>% group_by(w_day, hour) %>% summarise(count = n()) %>% 
+  ggplot(aes(x = hour, y = w_day, fill = count)) +
+  geom_tile() +
+  scale_fill_viridis_c() +
+  labs(title = "Heatmap of Note Publishing")
+
 # Latency by current status
 notes_merged_latency <- left_join(notes_merged,time_status, by= "note_id")
 notes_merged_latency <- notes_merged_latency %>% filter(!is.na(latency)) %>% mutate(latency = as.numeric(latency))
+
 notes_merged_latency %>% ggplot(aes(x=latency))+
   geom_histogram()+
   facet_wrap(~current_status.x)+
   xlim(0,2000)
+
+# Latency vs. helpful rate
+notes_merged_latency %>% 
+  ggplot(aes(x = latency, y = helpful_rate))+
+  geom_point(alpha = 0.5)+
+  geom_smooth(method = "lm")+
+  labs(title = "Latency vs. helpful rate")
+
+# About the same amount of time to status change for misleading and not misleading
+notes_merged_latency %>% 
+  ggplot(aes(x = classification, y = latency))+
+  geom_boxplot()+
+  ylim(0,2000)
+  labs(title = "Latency by classification")
+  
+# Latency by hour of day
+notes_merged_latency %>% 
+  ggplot(aes(x = hour, y = latency))+
+  geom_boxplot()+
+  ylim(0,2000)+
+  labs(title = "Latency grouped by hour")
+
+#Not much here, shows that engagement not really based on latency
+ggplot(tweets, aes(x = Views, y = latency))+
+  geom_point(alpha = 0.5)+
+  geom_smooth(method = "lm")+
+  ylim(0,2000)+
+  labs(title = "Views vs latency")
+#Not much here, shows that engagement not really based on latency
+ggplot(tweets, aes(x = Likes, y = latency))+
+  geom_point(alpha = 0.5)+
+  geom_smooth(method = "lm")+
+  ylim(0,2000)+
+  labs(title = "Likes vs latency")
+
+
+
+notes_merged_latency2 <- left_join(notes_merged_latency,tweets, by="note_id")
+#predicting latency
+summary(lm(latency.x ~ helpful_rate.x + Note.Published. + ratings.x, notes_merged_latency2))
 
 
 
