@@ -274,6 +274,7 @@ notes_merged %>%
   geom_histogram(binwidth = 1)+
   labs(title = "Note Status Over Time", x = "Date", y = "Count")
 
+# add stacked bars ----
 tweets %>% ggplot(aes(x=latency))+
   geom_histogram(binwidth = 60)+
   xlim(0,1200)+
@@ -281,7 +282,7 @@ tweets %>% ggplot(aes(x=latency))+
   labs(title = "Latency (first status change) for scraped tweets by note visible")
 
 # Less time when actually visible
-tweets %>% filter(!is.na(latency)) %>% group_by(Note.Published.) %>% summarise(mean(latency,))
+tweets %>% filter(!is.na(latency)) %>% group_by(Note.Published.) %>% summarise(median(latency,))
 
 # Distribution of current status by note visible or not
 tweets %>% ggplot(aes(x=current_status))+
@@ -352,23 +353,459 @@ notes_merged_latency2 <- left_join(notes_merged_latency,tweets, by="note_id")
 summary(lm(latency.x ~ helpful_rate.x + Note.Published. + ratings.x, notes_merged_latency2))
 
 
+# Look at possible parameters ----
+notes_merged_latency2$created_at.x <- as.Date(notes_merged_latency2$created_at.x)
+notes_merged_latency2$latency.x <- as.numeric(notes_merged_latency2$latency.x)
 
-#Summary:
-# How many ratings needed to publish a note: 
-#unknown, we need to get information on notes actually 
-#being published, there seems to be no clear indication of 
-#how many rates/agreement rate but at some point they are 
-#definitely published because most published notes have more 
-#ratings and higher agreement.
-#
-# How many people need to disagree: 
-#similar procedure to first question, we need to see the 
-#data about published notes and then use the not_helpful_rate 
-#to determine publishability.
+# Oct 3, 2022
+notes_merged_latency2 %>% filter(year(created_at.x) == 2022, 
+                                month(created_at.x)==10,
+                                day(created_at.x)>=0,day(created_at.x)<=6) %>% 
+  mutate(date_range = ifelse(created_at.x < as.Date("2022-10-03"), "Before", "After")) %>%
+  ggplot(aes(x=latency.x))+
+  geom_histogram()+
+  xlim(0,1500)+
+  facet_wrap(~ date_range)
 
-# Disagreement defined as a high not helpful rate 
-#(mostly) or a low ratings score
+notes_merged_latency2 %>% filter(year(created_at.x) == 2022, 
+                                 month(created_at.x)==10,
+                                 day(created_at.x)>=0,day(created_at.x)<=6) %>% 
+  mutate(date_range = ifelse(created_at.x < as.Date("2022-10-03"), "Before", "After")) %>%
+  group_by(date_range) %>%
+  summarise(mean(latency.x), median(latency.x),n())
 
-# Agreement rate, helpful rate, and ratings are key to 
-#getting a note published, need to investigate note_length 
-#as well as trustworthy sources to see if there is correlation.
+notes_merged_latency2 %>% filter(year(created_at.x) == 2022, 
+                                 month(created_at.x)==10,
+                                 day(created_at.x)>=0,day(created_at.x)<=6) %>% 
+  mutate(date_range = ifelse(created_at.x < as.Date("2022-10-03"), "Before", "After")) %>%
+  group_by(date_range, current_status.x) %>%
+  summarise(count = n()) %>%
+  group_by(date_range) %>%
+  mutate(percentage = count / sum(count) * 100) %>% 
+  ggplot(aes(x = current_status.x, y = percentage, fill = current_status.x)) +
+  geom_col()+
+  facet_wrap(~date_range)+
+  labs(x ="Status",y="Percentage")+
+  coord_flip()
+
+#Nov 10, 2022
+notes_merged_latency2 %>% filter(year(created_at.x) == 2022, 
+                                 month(created_at.x)==11,
+                                 day(created_at.x)>=7,day(created_at.x)<=13) %>% 
+  mutate(date_range = ifelse(created_at.x < as.Date("2022-11-10"), "Before", "After")) %>%
+  ggplot(aes(x=latency.x))+
+  geom_histogram()+
+  xlim(0,1500)+
+  facet_wrap(~ date_range)
+
+notes_merged_latency2 %>% filter(year(created_at.x) == 2022, 
+                                 month(created_at.x)==11,
+                                 day(created_at.x)>=7,day(created_at.x)<=13) %>% 
+  mutate(date_range = ifelse(created_at.x < as.Date("2022-11-10"), "Before", "After")) %>%
+  group_by(date_range) %>%
+  summarise(mean(latency.x), median(latency.x),n())
+
+notes_merged_latency2 %>% filter(year(created_at.x) == 2022, 
+                                 month(created_at.x)==11,
+                                 day(created_at.x)>=7,day(created_at.x)<=13) %>% 
+  mutate(date_range = ifelse(created_at.x < as.Date("2022-11-10"), "Before", "After")) %>%
+  group_by(date_range, current_status.x) %>%
+  summarise(count = n()) %>%
+  group_by(date_range) %>%
+  mutate(percentage = count / sum(count) * 100) %>% 
+  ggplot(aes(x = current_status.x, y = percentage, fill = current_status.x)) +
+  geom_col()+
+  facet_wrap(~date_range)+
+  labs(x ="Status",y="Percentage")+
+  coord_flip()
+
+# Nov 30, 2022
+notes_merged_latency2 %>% filter(year(created_at.x) == 2022, 
+                                 month(created_at.x)==11,
+                                 day(created_at.x)>=27,day(created_at.x)<=31) %>% 
+  mutate(date_range = ifelse(created_at.x < as.Date("2022-11-30"), "Before", "After")) %>%
+  ggplot(aes(x=latency.x))+
+  geom_histogram()+
+  xlim(0,1500)+
+  facet_wrap(~ date_range)
+
+notes_merged_latency2 %>% filter(year(created_at.x) == 2022, 
+                                 month(created_at.x)==11,
+                                 day(created_at.x)>=27,day(created_at.x)<=31) %>% 
+  mutate(date_range = ifelse(created_at.x < as.Date("2022-11-30"), "Before", "After")) %>%
+  group_by(date_range) %>%
+  summarise(mean(latency.x), median(latency.x),n())
+
+notes_merged_latency2 %>% filter(year(created_at.x) == 2022, 
+                                 month(created_at.x)==11,
+                                 day(created_at.x)>=27,day(created_at.x)<=31) %>% 
+  mutate(date_range = ifelse(created_at.x < as.Date("2022-11-30"), "Before", "After")) %>%
+  group_by(date_range, current_status.x) %>%
+  summarise(count = n()) %>%
+  group_by(date_range) %>%
+  mutate(percentage = count / sum(count) * 100) %>% 
+  ggplot(aes(x = current_status.x, y = percentage, fill = current_status.x)) +
+  geom_col()+
+  facet_wrap(~date_range)+
+  labs(x ="Status",y="Percentage")+
+  coord_flip()
+  
+### Jan 17, 2023 ----
+notes_merged_latency2 %>% filter(year(created_at.x) == 2023, 
+                                 month(created_at.x)==1,
+                                 day(created_at.x)>=13,day(created_at.x)<=21) %>% 
+  mutate(date_range = ifelse(created_at.x < as.Date("2023-01-17"), "Before", "After")) %>%
+  ggplot(aes(x=latency.x))+
+  geom_histogram()+
+  xlim(0,1500)+
+  facet_wrap(~ date_range)
+
+notes_merged_latency2 %>% filter(year(created_at.x) == 2023, 
+                                 month(created_at.x)==1,
+                                 day(created_at.x)>=13,day(created_at.x)<=21) %>% 
+  mutate(date_range = ifelse(created_at.x < as.Date("2023-01-17"), "Before", "After")) %>%
+  group_by(date_range) %>%
+  summarise(mean(latency.x), median(latency.x),n())
+
+notes_merged_latency2 %>% filter(year(created_at.x) == 2023, 
+                                 month(created_at.x)==1,
+                                 day(created_at.x)>=13,day(created_at.x)<=21) %>% 
+  mutate(date_range = ifelse(created_at.x < as.Date("2023-01-17"), "Before", "After")) %>%
+  group_by(date_range, current_status.x) %>%
+  summarise(count = n()) %>%
+  group_by(date_range) %>%
+  mutate(percentage = count / sum(count) * 100) %>% 
+  ggplot(aes(x = current_status.x, y = percentage, fill = current_status.x)) +
+  geom_col()+
+  facet_wrap(~date_range)+
+  labs(x ="Status",y="Percentage")+
+  coord_flip()
+
+# March 13, 2023
+# Decrease threshold of concensus
+notes_merged_latency2 %>% filter(year(created_at.x) == 2023, 
+                                 month(created_at.x)==3,
+                                 day(created_at.x)>=9,day(created_at.x)<=17) %>% 
+  mutate(date_range = ifelse(created_at.x < as.Date("2023-03-13"), "Before", "After")) %>%
+  ggplot(aes(x=latency.x))+
+  geom_histogram()+
+  xlim(0,1500)+
+  facet_wrap(~ date_range)
+
+notes_merged_latency2 %>% filter(year(created_at.x) == 2023, 
+                                 month(created_at.x)==3,
+                                 day(created_at.x)>=9,day(created_at.x)<=17) %>% 
+  mutate(date_range = ifelse(created_at.x < as.Date("2023-03-13"), "Before", "After")) %>%
+  group_by(date_range) %>%
+  summarise(mean(latency.x), median(latency.x),n())
+
+notes_merged_latency2 %>% filter(year(created_at.x) == 2023, 
+                                 month(created_at.x)==3,
+                                 day(created_at.x)>=9,day(created_at.x)<=17) %>% 
+  mutate(date_range = ifelse(created_at.x < as.Date("2023-03-13"), "Before", "After")) %>%
+  group_by(date_range, current_status.x) %>%
+  summarise(count = n()) %>%
+  group_by(date_range) %>%
+  mutate(percentage = count / sum(count) * 100) %>% 
+  ggplot(aes(x = current_status.x, y = percentage, fill = current_status.x)) +
+  geom_col()+
+  facet_wrap(~date_range)+
+  labs(x ="Status",y="Percentage")+
+  coord_flip()
+
+### April 14, 2023 ----
+#more notes as not helpful
+notes_merged_latency2 %>% filter(year(created_at.x) == 2023, 
+                                 month(created_at.x)==4,
+                                 day(created_at.x)>=7,day(created_at.x)<=20) %>% 
+  mutate(date_range = ifelse(created_at.x < as.Date("2023-04-14"), "Before", "After")) %>%
+  ggplot(aes(x=latency.x))+
+  geom_histogram()+
+  xlim(0,1500)+
+  facet_wrap(~ date_range)
+
+notes_merged_latency2 %>% filter(year(created_at.x) == 2023, 
+                                 month(created_at.x)==4,
+                                 day(created_at.x)>=7,day(created_at.x)<=20) %>% 
+  mutate(date_range = ifelse(created_at.x < as.Date("2023-04-14"), "Before", "After")) %>%
+  group_by(date_range) %>%
+  summarise(mean(latency.x), median(latency.x),n())
+
+notes_merged_latency2 %>% filter(year(created_at.x) == 2023, 
+                                 month(created_at.x)==4,
+                                 day(created_at.x)>=7,day(created_at.x)<=20) %>% 
+  mutate(date_range = ifelse(created_at.x < as.Date("2023-04-14"), "Before", "After")) %>%
+  group_by(date_range, current_status.x) %>%
+  summarise(count = n()) %>%
+  group_by(date_range) %>%
+  mutate(percentage = count / sum(count) * 100) %>% 
+  ggplot(aes(x = current_status.x, y = percentage, fill = current_status.x)) +
+  geom_col()+
+  facet_wrap(~date_range)+
+  labs(x ="Status",y="Percentage")+
+  coord_flip()
+
+# April 20, 2023
+# More notes helpful, not as impactful as more notes not helpful
+notes_merged_latency2 %>% filter(year(created_at.x) == 2023, 
+                                 month(created_at.x)==4,
+                                 day(created_at.x)>=14,day(created_at.x)<=27) %>% 
+  mutate(date_range = ifelse(created_at.x < as.Date("2023-04-20"), "Before", "After")) %>%
+  ggplot(aes(x=latency.x))+
+  geom_histogram()+
+  xlim(0,1500)+
+  facet_wrap(~ date_range)
+
+notes_merged_latency2 %>% filter(year(created_at.x) == 2023, 
+                                 month(created_at.x)==4,
+                                 day(created_at.x)>=14,day(created_at.x)<=27) %>% 
+  mutate(date_range = ifelse(created_at.x < as.Date("2023-04-20"), "Before", "After")) %>%
+  group_by(date_range) %>%
+  summarise(mean(latency.x), median(latency.x),n())
+
+notes_merged_latency2 %>% filter(year(created_at.x) == 2023, 
+                                 month(created_at.x)==4,
+                                 day(created_at.x)>=14,day(created_at.x)<=27) %>% 
+  mutate(date_range = ifelse(created_at.x < as.Date("2023-04-20"), "Before", "After")) %>%
+  group_by(date_range, current_status.x) %>%
+  summarise(count = n()) %>%
+  group_by(date_range) %>%
+  mutate(percentage = count / sum(count) * 100) %>% 
+  ggplot(aes(x = current_status.x, y = percentage, fill = current_status.x)) +
+  geom_col()+
+  facet_wrap(~date_range)+
+  labs(x ="Status",y="Percentage")+
+  coord_flip()
+
+# July 27, 2023
+# Increased threshold for identifying as helpful notes
+notes_merged_latency2 %>% filter(year(created_at.x) == 2023, 
+                                 month(created_at.x)==7,
+                                 day(created_at.x)>=20,day(created_at.x)<=31) %>% 
+  mutate(date_range = ifelse(created_at.x < as.Date("2023-07-27"), "Before", "After")) %>%
+  ggplot(aes(x=latency.x))+
+  geom_histogram()+
+  xlim(0,1500)+
+  facet_wrap(~ date_range)
+
+notes_merged_latency2 %>% filter(year(created_at.x) == 2023, 
+                                 month(created_at.x)==7,
+                                 day(created_at.x)>=20,day(created_at.x)<=31) %>% 
+  mutate(date_range = ifelse(created_at.x < as.Date("2023-07-27"), "Before", "After")) %>%
+  group_by(date_range) %>%
+  summarise(mean(latency.x), median(latency.x),n())
+
+notes_merged_latency2 %>% filter(year(created_at.x) == 2023, 
+                                 month(created_at.x)==7,
+                                 day(created_at.x)>=20,day(created_at.x)<=31) %>% 
+  mutate(date_range = ifelse(created_at.x < as.Date("2023-07-27"), "Before", "After")) %>%
+  group_by(date_range, current_status.x) %>%
+  summarise(count = n()) %>%
+  group_by(date_range) %>%
+  mutate(percentage = count / sum(count) * 100) %>% 
+  ggplot(aes(x = current_status.x, y = percentage, fill = current_status.x)) +
+  geom_col()+
+  facet_wrap(~date_range)+
+  labs(x ="Status",y="Percentage")+
+  coord_flip()
+
+# August 28, 2023
+# Lower threshold to reach consensus
+notes_merged_latency2 %>% filter(year(created_at.x) == 2023, 
+                                 month(created_at.x)==8,
+                                 day(created_at.x)>=21,day(created_at.x)<=31) %>% 
+  mutate(date_range = ifelse(created_at.x < as.Date("2023-08-28"), "Before", "After")) %>%
+  ggplot(aes(x=latency.x))+
+  geom_histogram()+
+  xlim(0,1500)+
+  facet_wrap(~ date_range)
+
+notes_merged_latency2 %>% filter(year(created_at.x) == 2023, 
+                                 month(created_at.x)==8,
+                                 day(created_at.x)>=21,day(created_at.x)<=31) %>% 
+  mutate(date_range = ifelse(created_at.x < as.Date("2023-08-28"), "Before", "After")) %>%
+  group_by(date_range) %>%
+  summarise(mean(latency.x), median(latency.x),n())
+
+notes_merged_latency2 %>% filter(year(created_at.x) == 2023, 
+                                 month(created_at.x)==8,
+                                 day(created_at.x)>=21,day(created_at.x)<=31) %>% 
+  mutate(date_range = ifelse(created_at.x < as.Date("2023-08-28"), "Before", "After")) %>%
+  group_by(date_range, current_status.x) %>%
+  summarise(count = n()) %>%
+  group_by(date_range) %>%
+  mutate(percentage = count / sum(count) * 100) %>% 
+  ggplot(aes(x = current_status.x, y = percentage, fill = current_status.x)) +
+  geom_col()+
+  facet_wrap(~date_range)+
+  labs(x ="Status",y="Percentage")+
+  coord_flip()
+
+# September 21, 2023
+notes_merged_latency2 %>% filter(year(created_at.x) == 2023, 
+                                 month(created_at.x)==9,
+                                 day(created_at.x)>=14,day(created_at.x)<=28) %>% 
+  mutate(date_range = ifelse(created_at.x < as.Date("2023-09-21"), "Before", "After")) %>%
+  ggplot(aes(x=latency.x))+
+  geom_histogram()+
+  xlim(0,1500)+
+  facet_wrap(~ date_range)
+
+notes_merged_latency2 %>% filter(year(created_at.x) == 2023, 
+                                 month(created_at.x)==9,
+                                 day(created_at.x)>=14,day(created_at.x)<=28) %>% 
+  mutate(date_range = ifelse(created_at.x < as.Date("2023-09-21"), "Before", "After")) %>%
+  group_by(date_range) %>%
+  summarise(mean(latency.x), median(latency.x),n())
+
+notes_merged_latency2 %>% filter(year(created_at.x) == 2023, 
+                                 month(created_at.x)==9,
+                                 day(created_at.x)>=14,day(created_at.x)<=28) %>% 
+  mutate(date_range = ifelse(created_at.x < as.Date("2023-09-21"), "Before", "After")) %>%
+  group_by(date_range, current_status.x) %>%
+  summarise(count = n()) %>%
+  group_by(date_range) %>%
+  mutate(percentage = count / sum(count) * 100) %>% 
+  ggplot(aes(x = current_status.x, y = percentage, fill = current_status.x)) +
+  geom_col()+
+  facet_wrap(~date_range)+
+  labs(x ="Status",y="Percentage")+
+  coord_flip()
+
+### October 3, 2023 ----
+# Reduced delay between scoring and showing the note
+notes_merged_latency2 %>% filter(year(created_at.x) == 2023, 
+                                 month(created_at.x)==10,
+                                 day(created_at.x)>=0,day(created_at.x)<=10) %>% 
+  mutate(date_range = ifelse(created_at.x <= as.Date("2023-10-03"), "Before", "After")) %>%
+  ggplot(aes(x=latency.x))+
+  geom_histogram()+
+  xlim(0,1500)+
+  facet_wrap(~ date_range)
+
+notes_merged_latency2 %>% filter(year(created_at.x) == 2023, 
+                                 month(created_at.x)==10,
+                                 day(created_at.x)>=0,day(created_at.x)<=10) %>% 
+  mutate(date_range = ifelse(created_at.x <= as.Date("2023-10-03"), "Before", "After")) %>%
+  group_by(date_range) %>%
+  summarise(mean(latency.x), median(latency.x),n())
+
+notes_merged_latency2 %>% filter(year(created_at.x) == 2023, 
+                                 month(created_at.x)==10,
+                                 day(created_at.x)>=0,day(created_at.x)<=10) %>% 
+  mutate(date_range = ifelse(created_at.x <= as.Date("2023-10-03"), "Before", "After")) %>%
+  group_by(date_range, current_status.x) %>%
+  summarise(count = n()) %>%
+  group_by(date_range) %>%
+  mutate(percentage = count / sum(count) * 100) %>% 
+  ggplot(aes(x = current_status.x, y = percentage, fill = current_status.x)) +
+  geom_col()+
+  facet_wrap(~date_range)+
+  labs(x ="Status",y="Percentage")+
+  coord_flip()
+
+# December 20,2023
+# Some interesting (look at website)
+notes_merged_latency2 %>% filter(year(created_at.x) == 2023, 
+                                 month(created_at.x)==12,
+                                 day(created_at.x)>=13,day(created_at.x)<=27) %>% 
+  mutate(date_range = ifelse(created_at.x <= as.Date("2023-12-20"), "Before", "After")) %>%
+  ggplot(aes(x=latency.x))+
+  geom_histogram()+
+  xlim(0,1500)+
+  facet_wrap(~ date_range)
+
+notes_merged_latency2 %>% filter(year(created_at.x) == 2023, 
+                                 month(created_at.x)==12,
+                                 day(created_at.x)>=13,day(created_at.x)<=27) %>% 
+  mutate(date_range = ifelse(created_at.x <= as.Date("2023-12-20"), "Before", "After")) %>%
+  group_by(date_range) %>%
+  summarise(mean(latency.x), median(latency.x),n())
+
+notes_merged_latency2 %>% filter(year(created_at.x) == 2023, 
+                                 month(created_at.x)==12,
+                                 day(created_at.x)>=13,day(created_at.x)<=27) %>% 
+  mutate(date_range = ifelse(created_at.x <= as.Date("2023-12-20"), "Before", "After")) %>%
+  group_by(date_range, current_status.x) %>%
+  summarise(count = n()) %>%
+  group_by(date_range) %>%
+  mutate(percentage = count / sum(count) * 100) %>% 
+  ggplot(aes(x = current_status.x, y = percentage, fill = current_status.x)) +
+  geom_col()+
+  facet_wrap(~date_range)+
+  labs(x ="Status",y="Percentage")+
+  coord_flip()
+
+### May 31, 2024 ----
+#Coalesce ratings on the same note from raters with very high post-selection-similarity.
+notes_merged_latency2 %>% filter(year(created_at.x) == 2024, 
+                                 (month(created_at.x)==5 & day(created_at.x)>=24 & day(created_at.x)<=31) | 
+                                   (month(created_at.x)==6 & day(created_at.x)>=0 & day(created_at.x)<=7)) %>% 
+  mutate(date_range = ifelse(created_at.x <= as.Date("2024-05-31"), "Before", "After")) %>%
+  ggplot(aes(x=latency.x))+
+  geom_histogram()+
+  xlim(0,1500)+
+  facet_wrap(~ date_range)
+
+notes_merged_latency2 %>% filter(year(created_at.x) == 2024, 
+                                 (month(created_at.x)==5 & day(created_at.x)>=24 & day(created_at.x)<=31) | 
+                                   (month(created_at.x)==6 & day(created_at.x)>=0 & day(created_at.x)<=7)) %>%  
+  mutate(date_range = ifelse(created_at.x <= as.Date("2024-05-31"), "Before", "After")) %>%
+  group_by(date_range) %>%
+  summarise(mean(latency.x), median(latency.x),n())
+
+notes_merged_latency2 %>% filter(year(created_at.x) == 2024, 
+                                 (month(created_at.x)==5 & day(created_at.x)>=24 & day(created_at.x)<=31) | 
+                                   (month(created_at.x)==6 & day(created_at.x)>=0 & day(created_at.x)<=7)) %>%  
+  mutate(date_range = ifelse(created_at.x <= as.Date("2024-05-31"), "Before", "After")) %>%
+  group_by(date_range, current_status.x) %>%
+  summarise(count = n()) %>%
+  group_by(date_range) %>%
+  mutate(percentage = count / sum(count) * 100) %>% 
+  ggplot(aes(x = current_status.x, y = percentage, fill = current_status.x)) +
+  geom_col()+
+  facet_wrap(~date_range)+
+  labs(x ="Status",y="Percentage")+
+  coord_flip()
+
+### July 25, 2024 ----
+#Only score a subset of notes each time we run final note scoring. This doesn't affect what statuses new notes get, but does cause them to get scored more quickly.
+notes_merged_latency2 %>% filter(year(created_at.x) == 2024, 
+                                 month(created_at.x)==7,
+                                 day(created_at.x)>=18,day(created_at.x)<=31) %>% 
+  mutate(date_range = ifelse(created_at.x <= as.Date("2024-07-25"), "Before", "After")) %>%
+  ggplot(aes(x=latency.x))+
+  geom_histogram()+
+  xlim(0,1500)+
+  facet_wrap(~ date_range)
+
+notes_merged_latency2 %>% filter(year(created_at.x) == 2024, 
+                                 month(created_at.x)==7,
+                                 day(created_at.x)>=18,day(created_at.x)<=31) %>% 
+  mutate(date_range = ifelse(created_at.x <= as.Date("2024-07-25"), "Before", "After")) %>%
+  group_by(date_range) %>%
+  summarise(mean(latency.x), median(latency.x),n())
+
+
+notes_merged_latency2 %>% filter(year(created_at.x) == 2024, 
+                                 month(created_at.x)==7,
+                                 day(created_at.x)>=18,day(created_at.x)<=31) %>% 
+  mutate(date_range = ifelse(created_at.x <= as.Date("2024-07-25"), "Before", "After")) %>%
+  group_by(date_range, current_status.x) %>%
+  summarise(count = n()) %>%
+  group_by(date_range) %>%
+  mutate(percentage = count / sum(count) * 100) %>% 
+  ggplot(aes(x = current_status.x, y = percentage, fill = current_status.x)) +
+  geom_col()+
+  facet_wrap(~date_range)+
+  labs(x ="Status",y="Percentage")+
+  coord_flip()
+#Things to do:
+#Figure out important paramaters for model, use data from before and after big changes in 
+# the way the algorithm works (find this timeline on twitter website),
+
+# important things for the model to predict: Probabilioty of note being published, probability of status change, 
+# Latency when parameters change
+
+# Read paper (github) and read algorithm on x website
+
